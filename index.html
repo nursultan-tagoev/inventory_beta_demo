@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ДМ·СКЛАД — v2.1 (Авторизация)</title>
+  <title>МКТ·СКЛАД — v2.2</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,6 +13,10 @@
     button { cursor:pointer; }
     input, select { outline:none; }
     table { border-collapse:collapse; }
+    ::-webkit-scrollbar { width:10px; height:10px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:6px; }
+    ::-webkit-scrollbar-thumb:hover { background:#9ca3af; }
   </style>
 </head>
 <body>
@@ -21,7 +25,7 @@
   <script type="text/babel">
     const { useState, useMemo, useEffect } = React;
 
-    // ====== КОНСТАНТЫ ======
+    // ====== КОНСТАНТЫ И НАЧАЛЬНЫЕ ДАННЫЕ ======
     const DEFAULT_CATEGORIES = [
       {id:"Одежда",name:"Одежда",color:"#f97316",icon:"👕"},
       {id:"Канцелярия",name:"Канцелярия",color:"#3b82f6",icon:"✏️"},
@@ -31,13 +35,8 @@
       {id:"Прочее",name:"Прочее",color:"#64748b",icon:"📦"}
     ];
     const DEFAULT_PRODUCT_TYPES = [
-      {id:"t1",name:"Футболка"},
-      {id:"t2",name:"Бейсболка"},
-      {id:"t3",name:"Ручка"},
-      {id:"t4",name:"Блокнот"},
-      {id:"t5",name:"Пауэрбанк"},
-      {id:"t6",name:"Шопер"},
-      {id:"t7",name:"Стикерпак"}
+      {id:"t1",name:"Футболка"},{id:"t2",name:"Бейсболка"},{id:"t3",name:"Ручка"},
+      {id:"t4",name:"Блокнот"},{id:"t5",name:"Пауэрбанк"},{id:"t6",name:"Шопер"},{id:"t7",name:"Стикерпак"}
     ];
     const INIT_BRANCHES = [
       {id:1,name:"Филиал 1",city:"Бишкек",head:"Руководитель 1"},
@@ -53,9 +52,7 @@
       {id:1,name:"Поставщик 1",contact:"+996 555 123456",inn:"12345678901234"},
       {id:2,name:"Поставщик 2",contact:"+996 777 654321",inn:"98765432109876"}
     ];
-    const INIT_DIRECTIONS = [
-      {id:1,name:"Бизнес"},{id:2,name:"Розница"},{id:3,name:"ИФЦ"}
-    ];
+    const INIT_DIRECTIONS = [{id:1,name:"Бизнес"},{id:2,name:"Розница"},{id:3,name:"ИФЦ"}];
     const ROLES = {admin:"Администратор",manager:"Кладовщик",employee:"Сотрудник",director:"Руководитель"};
     const T_LABEL = {in:"Приход",out:"Выдача",return:"Возврат",writeoff:"Списание"};
     const T_COLOR = {in:"#16a34a",out:"#2563eb",return:"#7c3aed",writeoff:"#dc2626"};
@@ -105,7 +102,7 @@
       {id:6,name:"employee2",role:"employee",branchId:3,password:"employee2"},
     ];
 
-    // ====== ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ======
+    // ====== СТИЛИ И ИКОНКИ ======
     const LBL = {fontSize:11,color:"#9ca3af",display:"block",marginBottom:4,fontWeight:500};
     const INP = {width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:12,background:"white",color:"#1f2937",boxSizing:"border-box",outline:"none"};
 
@@ -114,6 +111,7 @@
     function IcoBranch(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>}
     function IcoUsers(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>}
     function IcoSettings(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>}
+
     function StatChip({label,value,color}){
       return <div style={{background:`${color}15`,borderRadius:8,padding:"5px 12px",display:"flex",flexDirection:"column",alignItems:"center"}}>
         <div style={{fontSize:13,fontWeight:700,color}}>{value}</div>
@@ -125,22 +123,16 @@
     }
 
     // ====== ЭКРАН ВХОДА ======
-    function LoginScreen({users, setCurrentUser, showToast}) {
-      const [login, setLogin] = useState("");
-      const [password, setPassword] = useState("");
-      const [error, setError] = useState("");
-
-      const handleLogin = () => {
-        const u = users.find(u => u.name === login && u.password === password);
-        if (u) {
-          setCurrentUser(u);
-          setError("");
-          showToast("Добро пожаловать, " + u.name);
-        } else {
-          setError("Неверный логин или пароль");
-        }
+    function LoginScreen({users,setCurrentUser,showToast}){
+      const [login,setLogin]=useState("");
+      const [password,setPassword]=useState("");
+      const [error,setError]=useState("");
+      const handleLogin = ()=>{
+        const u=users.find(u=>u.name===login&&u.password===password);
+        if(u){setCurrentUser(u);setError("");showToast("Добро пожаловать, "+u.name);}
+        else setError("Неверный логин или пароль");
       };
-
+      const onKey = e => { if(e.key==="Enter") handleLogin(); };
       return (
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#1a1d2e"}}>
           <div style={{background:"white",borderRadius:16,padding:40,width:360,textAlign:"center"}}>
@@ -148,31 +140,25 @@
             <div style={{fontSize:22,fontWeight:700,marginBottom:4,color:"#1f2937"}}>МКТ·СКЛАД</div>
             <div style={{fontSize:13,color:"#6b7280",marginBottom:24}}>Система складского учёта</div>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <div>
-                <input type="text" value={login} onChange={e=>setLogin(e.target.value)} placeholder="Логин" style={{...INP,padding:"12px",fontSize:14}}/>
-              </div>
-              <div>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Пароль" style={{...INP,padding:"12px",fontSize:14}}/>
-              </div>
+              <input type="text" value={login} onChange={e=>setLogin(e.target.value)} onKeyDown={onKey} placeholder="Логин" style={{...INP,padding:"12px",fontSize:14}}/>
+              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={onKey} placeholder="Пароль" style={{...INP,padding:"12px",fontSize:14}}/>
               {error && <div style={{color:"#dc2626",fontSize:13}}>{error}</div>}
               <button onClick={handleLogin} style={{background:"#6366f1",color:"white",border:"none",padding:"12px",borderRadius:10,fontSize:16,fontWeight:600}}>Войти</button>
             </div>
-            <div style={{marginTop:20,fontSize:11,color:"#9ca3af"}}>
-              По умолчанию: admin / admin
-            </div>
+            <div style={{marginTop:20,fontSize:11,color:"#9ca3af"}}>По умолчанию: admin / admin</div>
           </div>
         </div>
       );
     }
 
-    // ====== ОСНОВНЫЕ КОМПОНЕНТЫ ======
-    function ItemsView({products,setProducts,stock,can,addMov,showToast,movements,activeCheckouts,gr,recipients,customCategories,productTypes,locations,suppliers,directions,userBranchId,isRestricted}) {
+    // ====== СПИСОК ТОВАРОВ ======
+    function ItemsView({products,setProducts,stock,can,addMov,showToast,movements,activeCheckouts,gr,recipients,customCategories,productTypes,locations,suppliers,directions,branches,userBranchId,isRestricted}){
       const [search,setSearch]=useState("");
       const [catFilter,setCatF]=useState("all");
       const [viewMode,setVM]=useState("grid");
       const [showAdd,setShowAdd]=useState(false);
       const [selItem,setSelItem]=useState(null);
-      const [form,setForm]=useState({name:"",sku:"",categoryId:"Одежда",price:850,qty:0,locationId:4,directionId:1,supplierId:1,productTypeId:"t1"});
+      const [form,setForm]=useState({name:"",sku:"",categoryId:customCategories[0]?.id||"",price:850,qty:0,locationId:locations[0]?.id||4,directionId:directions[0]?.id||1,supplierId:suppliers[0]?.id||1,productTypeId:productTypes[0]?.id||"t1"});
 
       const visibleProducts = isRestricted
         ? products.filter(p => !p.archived && locations.find(l=>l.id===p.locationId)?.branchId === userBranchId)
@@ -192,20 +178,24 @@
       };
 
       const totalItems = visibleProducts.length;
-      const totalQty = Object.entries(stock).filter(([pid])=>visibleProducts.some(p=>p.id==pid)).reduce((a,[,q])=>a+q,0);
+      const totalQty = visibleProducts.reduce((a,p)=>a+(stock[p.id]||0),0);
       const totalVal = visibleProducts.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
+      const availLocs = isRestricted ? locations.filter(l=>l.branchId===userBranchId) : locations;
 
       return (
         <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
           <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-              <div style={{flex:1,position:"relative"}}><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#9ca3af"}}>🔍</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск товаров..." style={{width:"100%",padding:"8px 10px 8px 32px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/></div>
+              <div style={{flex:1,position:"relative"}}>
+                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#9ca3af"}}>🔍</span>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск товаров..." style={{width:"100%",padding:"8px 10px 8px 32px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
+              </div>
               <div style={{display:"flex",border:"1px solid #e5e7eb",borderRadius:8,overflow:"hidden"}}>
                 {[["grid","⊞"],["list","≡"]].map(([m,icon])=><button key={m} onClick={()=>setVM(m)} style={{padding:"7px 12px",border:"none",cursor:"pointer",fontSize:15,background:viewMode===m?"#1a1d2e":"white",color:viewMode===m?"white":"#6b7280"}}>{icon}</button>)}
               </div>
               {can("edit")&&<button onClick={()=>setShowAdd(true)} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>+</span> Добавить</button>}
             </div>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
               <button onClick={()=>setCatF("all")} style={catBtn(catFilter==="all","#6366f1")}>Все ({totalItems})</button>
               {customCategories.map(c=>{const cnt=visibleProducts.filter(p=>p.categoryId===c.id).length;if(!cnt)return null;return <button key={c.id} onClick={()=>setCatF(c.id)} style={catBtn(catFilter===c.id,c.color)}>{c.icon} {c.name} ({cnt})</button>})}
               <div style={{marginLeft:"auto",display:"flex",gap:8}}><StatChip label="единиц" value={totalQty} color="#6366f1"/><StatChip label="стоимость" value={som(totalVal)} color="#10b981"/></div>
@@ -213,22 +203,22 @@
           </div>
           <div style={{flex:1,overflow:"auto",padding:20}}>
             {showAdd&&can("edit")&&(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:18,marginBottom:18}}>
+              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:18,marginBottom:18,boxShadow:"0 4px 16px rgba(0,0,0,0.06)"}}>
                 <div style={{fontWeight:700,fontSize:14,color:"#1f2937",marginBottom:14}}>Новый товар</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                   <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={INP}/></div>
                   <div><div style={LBL}>Артикул</div><input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Авто" style={INP}/></div>
                   <div><div style={LBL}>Категория</div><select value={form.categoryId} onChange={e=>setForm({...form,categoryId:e.target.value})} style={INP}>{customCategories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}</select></div>
                   <div><div style={LBL}>Тип продукта</div><select value={form.productTypeId} onChange={e=>setForm({...form,productTypeId:e.target.value})} style={INP}>{productTypes.map(pt=><option key={pt.id} value={pt.id}>{pt.name}</option>)}</select></div>
                   <div><div style={LBL}>Цена (сом)</div><input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={INP}/></div>
-                  <div><div style={LBL}>Место</div><select value={form.locationId} onChange={e=>setForm({...form,locationId:Number(e.target.value)})} style={INP}>{(isRestricted?locations.filter(l=>l.branchId===userBranchId):locations).map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
+                  <div><div style={LBL}>Место</div><select value={form.locationId} onChange={e=>setForm({...form,locationId:Number(e.target.value)})} style={INP}>{availLocs.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
                   <div><div style={LBL}>Направление</div><select value={form.directionId} onChange={e=>setForm({...form,directionId:Number(e.target.value)})} style={INP}>{directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
                   <div><div style={LBL}>Поставщик</div><select value={form.supplierId} onChange={e=>setForm({...form,supplierId:Number(e.target.value)})} style={INP}>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
                   <div><div style={LBL}>Начальный остаток</div><input type="number" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} style={INP}/></div>
                 </div>
                 <div style={{display:"flex",gap:8,marginTop:14}}>
-                  <button onClick={saveProduct} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 20px",borderRadius:8,fontSize:13,cursor:"pointer",fontWeight:600}}>Сохранить</button>
-                  <button onClick={()=>setShowAdd(false)} style={{background:"#f3f4f6",color:"#374151",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13,cursor:"pointer"}}>Отмена</button>
+                  <button onClick={saveProduct} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 20px",borderRadius:8,fontSize:13,fontWeight:600}}>Сохранить</button>
+                  <button onClick={()=>setShowAdd(false)} style={{background:"#f3f4f6",color:"#374151",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13}}>Отмена</button>
                 </div>
               </div>
             )}
@@ -237,7 +227,7 @@
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
                 {filtered.map(p=>{
                   const qty=stock[p.id]||0;
-                  const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦"};
+                  const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦",name:"—"};
                   const dir=directions.find(d=>d.id===p.directionId);
                   const loc=locations.find(l=>l.id===p.locationId);
                   const pt=productTypes.find(pt=>pt.id===p.productTypeId);
@@ -245,9 +235,9 @@
                     <div key={p.id} style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden",cursor:"pointer"}} onClick={()=>setSelItem(p)}>
                       <div style={{height:80,background:`linear-gradient(135deg,${cat.color}22,${cat.color}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{cat.icon}</div>
                       <div style={{padding:10}}>
-                        <div style={{fontWeight:600,fontSize:13}}>{p.name}</div>
+                        <div style={{fontWeight:600,fontSize:13,marginBottom:2}}>{p.name}</div>
                         <div style={{fontSize:11,color:"#6b7280"}}>{pt?.name||"—"} · {som(p.price)} · {loc?.name||"—"}</div>
-                        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
                           <span style={{fontWeight:700,color:qty>5?"#16a34a":qty>0?"#f59e0b":"#dc2626"}}>{qty} шт</span>
                           {dir&&<span style={{fontSize:10,background:"#eff6ff",borderRadius:10,padding:"1px 6px",color:"#2563eb"}}>{dir.name}</span>}
                         </div>
@@ -265,7 +255,7 @@
                       return <tr key={p.id} style={{borderBottom:"1px solid #f3f4f6",background:i%2?"#fafafa":"white",cursor:"pointer"}} onClick={()=>setSelItem(p)}>
                         <td style={{padding:"10px 14px",fontWeight:600}}>{p.name}</td>
                         <td style={{padding:"10px 14px"}}>{pt?.name||"—"}</td>
-                        <td style={{padding:"10px 14px"}}><span style={{background:cat?.color+"20",color:cat?.color,padding:"2px 8px",borderRadius:10,fontSize:11}}>{cat?.name}</span></td>
+                        <td style={{padding:"10px 14px"}}>{cat&&<span style={{background:cat.color+"20",color:cat.color,padding:"2px 8px",borderRadius:10,fontSize:11}}>{cat.name}</span>}</td>
                         <td style={{padding:"10px 14px"}}>{som(p.price)}</td>
                         <td style={{padding:"10px 14px",fontWeight:700,color:qty>5?"#16a34a":qty>0?"#f59e0b":"#dc2626"}}>{qty} шт</td>
                         <td style={{padding:"10px 14px"}}>{dir?.name||"—"}</td>
@@ -277,91 +267,755 @@
               </div>
             )}
           </div>
-          {selItem&&<ItemModal {...{p:selItem,stock,movements,activeCheckouts,addMov,showToast,gr,can,customCategories,productTypes,locations,recipients,onClose:()=>setSelItem(null)}}/>}
+          {selItem&&<ItemModal p={selItem} stock={stock} movements={movements} activeCheckouts={activeCheckouts} addMov={addMov} showToast={showToast} gr={gr} can={can} customCategories={customCategories} productTypes={productTypes} locations={locations} recipients={recipients} suppliers={suppliers} directions={directions} onClose={()=>setSelItem(null)}/>}
         </div>
       );
     }
 
-    function ItemModal({p,stock,movements,activeCheckouts,addMov,showToast,gr,can,customCategories,productTypes,locations,recipients,onClose}){
-      const qty=stock[p.id]||0;const history=[...movements].filter(m=>m.productId===p.id).sort((a,b)=>b.date.localeCompare(a.date));const onHands=activeCheckouts.filter(c=>c.productId===p.id);const [rqty,setRqty]=useState(1);
-      const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦"};
+    // ====== МОДАЛКА ТОВАРА (полная версия) ======
+    function ItemModal({p,stock,movements,activeCheckouts,addMov,showToast,gr,can,customCategories,productTypes,locations,recipients,suppliers,directions,onClose}){
+      const qty=stock[p.id]||0;
+      const history=[...movements].filter(m=>m.productId===p.id).sort((a,b)=>b.date.localeCompare(a.date));
+      const onHands=activeCheckouts.filter(c=>c.productId===p.id);
+      const [rqty,setRqty]=useState(1);
+      const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦",name:"—"};
       const pt=productTypes.find(pt=>pt.id===p.productTypeId);
-      return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:20}} onClick={onClose}>
-        <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:600,maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-          <div style={{height:140,background:`linear-gradient(135deg,${cat.color}33,${cat.color}66)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-            <span style={{fontSize:56}}>{cat.icon}</span>
-            <button onClick={onClose} style={{position:"absolute",top:12,right:12,background:"white",border:"none",borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:16}}>✕</button>
-            <div style={{position:"absolute",bottom:12,right:12,background:"white",borderRadius:20,padding:"4px 14px",fontWeight:800,fontSize:20,color:qty===0?"#dc2626":qty<5?"#f59e0b":"#16a34a"}}>{qty} шт</div>
-          </div>
-          <div style={{padding:"16px 20px"}}>
-            <div style={{fontWeight:700,fontSize:18}}>{p.name}</div>
-            <div style={{display:"flex",gap:8,margin:"10px 0",flexWrap:"wrap"}}>
-              <span style={{background:cat.color+"20",color:cat.color,padding:"2px 10px",borderRadius:10,fontSize:11,fontWeight:600}}>{cat.name}</span>
-              <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{p.sku}</span>
-              {pt&&<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{pt.name}</span>}
-              <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{locations.find(l=>l.id===p.locationId)?.name}</span>
+      const dir=directions.find(d=>d.id===p.directionId);
+      const sup=suppliers.find(s=>s.id===p.supplierId);
+
+      return (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:20}} onClick={onClose}>
+          <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{height:140,background:`linear-gradient(135deg,${cat.color}33,${cat.color}66)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+              <span style={{fontSize:56}}>{cat.icon}</span>
+              <button onClick={onClose} style={{position:"absolute",top:12,right:12,background:"white",border:"none",borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:16}}>✕</button>
+              <div style={{position:"absolute",bottom:12,right:12,background:"white",borderRadius:20,padding:"4px 14px",fontWeight:800,fontSize:20,color:qty===0?"#dc2626":qty<5?"#f59e0b":"#16a34a"}}>{qty} шт</div>
             </div>
-            {/* остальное без изменений, для краткости опускаю */ }
+            <div style={{padding:"16px 20px"}}>
+              <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>{p.name}</div>
+              <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+                <span style={{background:cat.color+"20",color:cat.color,padding:"2px 10px",borderRadius:10,fontSize:11,fontWeight:600}}>{cat.name}</span>
+                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{p.sku}</span>
+                {pt&&<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{pt.name}</span>}
+                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{locations.find(l=>l.id===p.locationId)?.name||"—"}</span>
+                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11,fontWeight:600}}>{som(p.price)}</span>
+                {dir&&<span style={{background:"#eff6ff",color:"#2563eb",padding:"2px 10px",borderRadius:10,fontSize:11}}>{dir.name}</span>}
+                {sup&&<span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:10,fontSize:11}}>{sup.name}</span>}
+              </div>
+
+              {onHands.length>0&&(
+                <div style={{background:"#eff6ff",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:6}}>НА РУКАХ ({onHands.reduce((a,c)=>a+c.remaining,0)} шт)</div>
+                  {onHands.map((c,i)=>{
+                    const isOD=c.dueDate&&c.dueDate<TODAY;
+                    const days=c.dueDate?Math.floor((new Date()-new Date(c.dueDate))/86400000):null;
+                    return (
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:i<onHands.length-1?"1px solid #bfdbfe":"none"}}>
+                        <span style={{fontSize:12,color:"#1e40af",fontWeight:500}}>{gr(c.recipientId)}{c.szDocumentNumber?` · ${c.szDocumentNumber}`:""}</span>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          <span style={{fontSize:12,fontWeight:700,color:"#2563eb"}}>{c.remaining} шт</span>
+                          {isOD&&<span style={{fontSize:10,background:"#fef2f2",color:"#dc2626",padding:"1px 6px",borderRadius:4,fontWeight:700}}>+{days}д</span>}
+                          {can("move")&&<button onClick={()=>{addMov({type:"return",productId:p.id,qty:c.remaining,locationId:p.locationId,issuerId:1,recipientId:c.recipientId,branchId:c.branchId,date:TODAY,condition:"хорошее",notes:""});showToast("Возврат оформлен");}} style={{background:"#7c3aed",color:"white",border:"none",padding:"3px 8px",borderRadius:5,fontSize:10,fontWeight:600}}>Вернуть</button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {can("move")&&(
+                <div style={{display:"flex",gap:6,marginBottom:14,alignItems:"center"}}>
+                  <button onClick={()=>{addMov({type:"in",productId:p.id,qty:Number(rqty),locationId:p.locationId,issuerId:1,date:TODAY,notes:"Приход",supplierId:p.supplierId,szDocumentNumber:""});showToast(`+${rqty} шт`);}} style={{background:"#f0fdf4",color:"#16a34a",border:"1px solid #bbf7d0",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>+ Приход</button>
+                  <input type="number" min={1} value={rqty} onChange={e=>setRqty(Number(e.target.value))} style={{...INP,width:70,textAlign:"center"}}/>
+                  <button onClick={()=>{if(qty<rqty){showToast("Недостаточно остатка",false);return;}addMov({type:"writeoff",productId:p.id,qty:Number(rqty),locationId:p.locationId,issuerId:1,date:TODAY,notes:"Списание"});showToast("Списано");}} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>Списать</button>
+                </div>
+              )}
+
+              <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>История ({history.length})</div>
+              <div style={{maxHeight:200,overflow:"auto"}}>
+                {history.map((m,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #f3f4f6"}}>
+                    <span style={{background:T_BG[m.type],color:T_COLOR[m.type],padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:600,whiteSpace:"nowrap"}}>{T_LABEL[m.type]}</span>
+                    <span style={{fontWeight:600,color:"#374151"}}>×{m.qty}</span>
+                    {m.recipientId&&<span style={{fontSize:11,color:"#6b7280"}}>{gr(m.recipientId)}</span>}
+                    {m.purpose&&<span style={{fontSize:11,color:"#9ca3af"}}>· {m.purpose}</span>}
+                    {m.szDocumentNumber&&<span style={{fontSize:10,background:"#f3f4f6",color:"#6b7280",padding:"1px 6px",borderRadius:4}}>{m.szDocumentNumber}</span>}
+                    <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af",fontFamily:"monospace"}}>{m.date}</span>
+                  </div>
+                ))}
+                {history.length===0&&<div style={{padding:"12px 0",fontSize:12,color:"#9ca3af",textAlign:"center"}}>Пока нет операций</div>}
+              </div>
+            </div>
           </div>
         </div>
-      </div>;
+      );
     }
 
-    function ActivityView({movements,products,overdue,can,addMov,showToast,gp,gr,gb,recipients,customCategories,locations,suppliers,directions,productTypes,userBranchId,isRestricted}) {
-      // ... также с фильтрацией по филиалу, для краткости пропустим
-      return <div>ActivityView (полный код будет добавлен в следующей версии)</div>;
+    // ====== ДВИЖЕНИЯ ======
+    function ActivityView({movements,products,overdue,can,addMov,showToast,gp,gr,gb,recipients,customCategories,locations,suppliers,directions,productTypes,branches,userBranchId,isRestricted}){
+      const [typeF,setTypeF]=useState("all");
+      const [search,setSearch]=useState("");
+      const [form,setForm]=useState(null);
+
+      const visibleMovs = isRestricted
+        ? movements.filter(m=>locations.find(l=>l.id===m.locationId)?.branchId===userBranchId)
+        : movements;
+
+      const sorted = [...visibleMovs]
+        .filter(m=>(typeF==="all"||m.type===typeF) &&
+          (!search||(gp(m.productId)+gr(m.recipientId||0)+(m.purpose||"")+(m.szDocumentNumber||"")+(m.notes||"")).toLowerCase().includes(search.toLowerCase())))
+        .sort((a,b)=>b.date.localeCompare(a.date));
+
+      const openForm = type => setForm({type,productId:"",qty:1,recipientId:"",branchId:1,purpose:"",dueDate:"",condition:"хорошее",notes:"",supplierId:suppliers[0]?.id||1,szDocumentNumber:"",locationId:""});
+
+      const submit = () => {
+        if(!form.productId){showToast("Выберите товар",false);return;}
+        const product = products.find(p=>p.id===Number(form.productId));
+        if(!product){showToast("Товар не найден",false);return;}
+        const r = recipients.find(r=>r.id===Number(form.recipientId));
+        const payload = {
+          type:form.type,
+          productId:Number(form.productId),
+          qty:Number(form.qty),
+          issuerId:1,
+          locationId:Number(form.locationId)||product.locationId,
+          date:TODAY,
+          notes:form.notes||"",
+        };
+        if(form.type==="out"){
+          if(!r){showToast("Выберите получателя",false);return;}
+          payload.recipientId=r.id;
+          payload.branchId=r.branchId;
+          payload.purpose=form.purpose;
+          payload.dueDate=form.dueDate;
+          payload.szDocumentNumber=form.szDocumentNumber;
+        } else if(form.type==="return"){
+          if(!r){showToast("Выберите получателя",false);return;}
+          payload.recipientId=r.id;
+          payload.branchId=r.branchId;
+          payload.condition=form.condition;
+        } else if(form.type==="in"){
+          payload.supplierId=Number(form.supplierId);
+          payload.szDocumentNumber=form.szDocumentNumber;
+        }
+        addMov(payload);
+        setForm(null);
+        showToast(T_LABEL[form.type]+" сохранён");
+      };
+
+      const visibleProducts = isRestricted
+        ? products.filter(p=>!p.archived&&locations.find(l=>l.id===p.locationId)?.branchId===userBranchId)
+        : products.filter(p=>!p.archived);
+
+      const visibleLocations = isRestricted ? locations.filter(l=>l.branchId===userBranchId) : locations;
+
+      return (
+        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
+            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#1f2937"}}>Движения товаров</div>
+              {can("move")&&(
+                <div style={{marginLeft:"auto",display:"flex",gap:6}}>
+                  {[{t:"out",l:"↑ Выдать",c:"#6366f1"},{t:"return",l:"↓ Возврат",c:"#7c3aed"},{t:"writeoff",l:"✕ Списать",c:"#dc2626"},{t:"in",l:"+ Приход",c:"#16a34a"}].map(op=>(
+                    <button key={op.t} onClick={()=>openForm(op.t)} style={{background:op.c,color:"white",border:"none",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>{op.l}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {overdue.length>0&&(
+              <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"8px 14px",marginBottom:12,fontSize:12,color:"#dc2626",fontWeight:600}}>
+                ⚠ {overdue.length} выдач просрочено — требуется возврат
+              </div>
+            )}
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {["all","out","in","return","writeoff"].map(t=>(
+                <button key={t} onClick={()=>setTypeF(t)} style={{padding:"5px 12px",borderRadius:20,border:"1px solid",fontSize:11,cursor:"pointer",background:typeF===t?"#1a1d2e":"white",borderColor:typeF===t?"#1a1d2e":"#e5e7eb",color:typeF===t?"white":"#6b7280",fontWeight:typeF===t?600:400}}>
+                  {t==="all"?"Все":T_LABEL[t]}
+                </button>
+              ))}
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{...INP,width:200,marginLeft:"auto"}}/>
+            </div>
+          </div>
+
+          <div style={{flex:1,overflow:"auto",padding:20}}>
+            {form&&(
+              <div style={{background:"white",borderRadius:12,border:`2px solid ${T_COLOR[form.type]}`,padding:18,marginBottom:16}}>
+                <div style={{fontWeight:700,fontSize:14,color:T_COLOR[form.type],marginBottom:14}}>{T_LABEL[form.type]}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                  <div><div style={LBL}>Товар</div>
+                    <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})} style={INP}>
+                      <option value="">— выбрать —</option>
+                      {visibleProducts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div><div style={LBL}>Количество</div><input type="number" min={1} value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} style={INP}/></div>
+                  <div><div style={LBL}>Место (склад)</div>
+                    <select value={form.locationId} onChange={e=>setForm({...form,locationId:e.target.value})} style={INP}>
+                      <option value="">— из товара —</option>
+                      {visibleLocations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+
+                  {(form.type==="out"||form.type==="return")&&<>
+                    <div><div style={LBL}>{form.type==="out"?"Получатель":"Возврат от"}</div>
+                      <select value={form.recipientId} onChange={e=>setForm({...form,recipientId:e.target.value})} style={INP}>
+                        <option value="">— выбрать —</option>
+                        {recipients.map(r=><option key={r.id} value={r.id}>{r.name} · {gb(r.branchId)}</option>)}
+                      </select>
+                    </div>
+                  </>}
+                  {form.type==="out"&&<>
+                    <div><div style={LBL}>Цель</div><input value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})} placeholder="Мероприятие..." style={INP}/></div>
+                    <div><div style={LBL}>Вернуть до</div><input type="date" value={form.dueDate} onChange={e=>setForm({...form,dueDate:e.target.value})} style={INP}/></div>
+                    <div><div style={LBL}>№ служебной записки</div><input value={form.szDocumentNumber} onChange={e=>setForm({...form,szDocumentNumber:e.target.value})} placeholder="СЗ-..." style={INP}/></div>
+                  </>}
+                  {form.type==="return"&&<div><div style={LBL}>Состояние</div>
+                    <select value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})} style={INP}>
+                      <option value="хорошее">Хорошее</option><option value="б/у">Б/у</option><option value="брак">Брак</option>
+                    </select>
+                  </div>}
+                  {form.type==="in"&&<>
+                    <div><div style={LBL}>Поставщик</div>
+                      <select value={form.supplierId} onChange={e=>setForm({...form,supplierId:e.target.value})} style={INP}>
+                        {suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    <div><div style={LBL}>№ накладной</div><input value={form.szDocumentNumber} onChange={e=>setForm({...form,szDocumentNumber:e.target.value})} placeholder="..." style={INP}/></div>
+                  </>}
+                  <div><div style={LBL}>Примечание</div><input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={INP}/></div>
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:14}}>
+                  <button onClick={submit} style={{background:T_COLOR[form.type],color:"white",border:"none",padding:"8px 20px",borderRadius:8,fontSize:13,fontWeight:600}}>Сохранить</button>
+                  <button onClick={()=>setForm(null)} style={{background:"#f3f4f6",color:"#374151",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13}}>Отмена</button>
+                </div>
+              </div>
+            )}
+
+            <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
+              <div style={{padding:"8px 16px",borderBottom:"1px solid #f3f4f6",fontSize:11,color:"#9ca3af"}}>Записей: {sorted.length}</div>
+              <div style={{maxHeight:"calc(100vh - 280px)",overflow:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                  <thead style={{position:"sticky",top:0,background:"#f9fafb",zIndex:1}}>
+                    <tr style={{borderBottom:"2px solid #f3f4f6"}}>
+                      {["Дата","Тип","Товар","Шт","Кому / От кого","Филиал","№ СЗ","Цель / Примечание"].map(h=>(
+                        <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:11,color:"#9ca3af",fontWeight:600,whiteSpace:"nowrap",background:"#f9fafb"}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((m,i)=>(
+                      <tr key={m.id} style={{borderBottom:"1px solid #f3f4f6",background:i%2?"#fafafa":"white"}}>
+                        <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:11,fontFamily:"monospace"}}>{m.date}</td>
+                        <td style={{padding:"9px 14px"}}><span style={{background:T_BG[m.type],color:T_COLOR[m.type],padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600}}>{T_LABEL[m.type]}</span></td>
+                        <td style={{padding:"9px 14px",fontWeight:600,color:"#1f2937"}}>{gp(m.productId)}</td>
+                        <td style={{padding:"9px 14px",fontWeight:700,color:"#374151"}}>×{m.qty}</td>
+                        <td style={{padding:"9px 14px",color:"#6b7280",fontSize:12}}>
+                          {m.type==="in"&&m.supplierId?suppliers.find(s=>s.id===m.supplierId)?.name||"—"
+                            :m.recipientId?gr(m.recipientId):"—"}
+                        </td>
+                        <td style={{padding:"9px 14px"}}>{m.branchId?<span style={{background:"#eff6ff",color:"#3b82f6",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:500}}>{gb(m.branchId)}</span>:<span style={{color:"#d1d5db"}}>—</span>}</td>
+                        <td style={{padding:"9px 14px",color:"#6b7280",fontSize:11,fontFamily:"monospace"}}>{m.szDocumentNumber||"—"}</td>
+                        <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:12}}>{m.purpose||m.notes||(m.condition?`Состояние: ${m.condition}`:"—")}</td>
+                      </tr>
+                    ))}
+                    {sorted.length===0&&<tr><td colSpan={8} style={{padding:30,textAlign:"center",color:"#9ca3af"}}>Записей не найдено</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     }
-    function BranchesView({...args}) { return <div>BranchesView</div>; }
-    function UsersView({users,setUsers,showToast,can,currentUser,branches}) {
-      const [newUser, setNewUser] = useState({name:"",password:"",role:"employee",branchId:1});
-      const addUser = () => {
-        if(!newUser.name.trim()||!newUser.password.trim()){showToast("Заполните поля",false);return;}
-        const id = Math.max(0,...users.map(u=>u.id))+1;
-        setUsers(prev => [...prev, {...newUser,id}]);
+
+    // ====== ФИЛИАЛЫ ======
+    function BranchesView({activeCheckouts,gp,gr,products,branches,locations,userBranchId,isRestricted}){
+      const visibleBranches = isRestricted ? branches.filter(b=>b.id===userBranchId) : branches;
+      const [sel,setSel] = useState(visibleBranches[0]?.id||1);
+
+      const bOuts = activeCheckouts.filter(c=>c.branchId===sel);
+      const byRec = {};
+      bOuts.forEach(c=>{if(!byRec[c.recipientId])byRec[c.recipientId]=[];byRec[c.recipientId].push(c);});
+      const totalQty = bOuts.reduce((a,c)=>a+c.remaining,0);
+      const totalVal = bOuts.reduce((a,c)=>a+(products.find(p=>p.id===c.productId)?.price||0)*c.remaining,0);
+      const selBranch = branches.find(b=>b.id===sel);
+
+      return (
+        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#1f2937",marginBottom:12}}>Филиалы — кто что взял</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {visibleBranches.map(b=>{
+                const cnt=activeCheckouts.filter(c=>c.branchId===b.id).reduce((a,c)=>a+c.remaining,0);
+                return (
+                  <button key={b.id} onClick={()=>setSel(b.id)} style={{padding:"8px 18px",borderRadius:10,border:"1px solid",fontSize:13,cursor:"pointer",fontWeight:600,background:sel===b.id?"#1a1d2e":"white",borderColor:sel===b.id?"#1a1d2e":"#e5e7eb",color:sel===b.id?"white":"#374151",display:"flex",alignItems:"center",gap:8}}>
+                    {b.name} <span style={{fontSize:10,opacity:0.7}}>· {b.city}</span>
+                    {cnt>0&&<span style={{background:sel===b.id?"#3b82f6":"#dbeafe",color:sel===b.id?"white":"#1d4ed8",borderRadius:10,padding:"0 7px",fontSize:11,fontWeight:700}}>{cnt}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{flex:1,overflow:"auto",padding:20}}>
+            {selBranch&&(
+              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
+                <div style={{width:40,height:40,borderRadius:10,background:"#1a1d2e",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{selBranch.name.charAt(0)}</div>
+                <div>
+                  <div style={{fontWeight:700,fontSize:14}}>{selBranch.name}</div>
+                  <div style={{fontSize:11,color:"#6b7280"}}>{selBranch.city} · {selBranch.head}</div>
+                </div>
+                <div style={{marginLeft:"auto",fontSize:11,color:"#9ca3af"}}>
+                  Локаций: {locations.filter(l=>l.branchId===sel).length}
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+              {[
+                {v:totalQty,l:"единиц на руках",c:"#6366f1"},
+                {v:som(totalVal),l:"стоимость выданного",c:"#10b981"},
+                {v:Object.keys(byRec).length,l:"получателей",c:"#f59e0b"},
+              ].map((k,i)=>(
+                <div key={i} style={{background:"white",borderRadius:10,border:"1px solid #e5e7eb",padding:"14px 16px",borderTop:`3px solid ${k.c}`}}>
+                  <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
+                  <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{k.l}</div>
+                </div>
+              ))}
+            </div>
+
+            {bOuts.length===0&&(
+              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:40,textAlign:"center",color:"#9ca3af"}}>
+                <div style={{fontSize:32,marginBottom:8}}>✓</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#374151"}}>Нет активных выдач</div>
+              </div>
+            )}
+
+            {Object.entries(byRec).map(([rid,items])=>{
+              const pQty=items.reduce((a,c)=>a+c.remaining,0);
+              const pVal=items.reduce((a,c)=>a+(products.find(p=>p.id===c.productId)?.price||0)*c.remaining,0);
+              return (
+                <div key={rid} style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",marginBottom:12,overflow:"hidden"}}>
+                  <div style={{padding:"12px 16px",borderBottom:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#f9fafb"}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#1f2937"}}>{gr(Number(rid))}</div>
+                    <div style={{display:"flex",gap:8}}>
+                      <span style={{background:"#eff6ff",color:"#2563eb",padding:"3px 10px",borderRadius:8,fontSize:12,fontWeight:700}}>{pQty} шт</span>
+                      <span style={{background:"#f0fdf4",color:"#16a34a",padding:"3px 10px",borderRadius:8,fontSize:12,fontWeight:700}}>{som(pVal)}</span>
+                    </div>
+                  </div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                    <thead><tr style={{borderBottom:"1px solid #f3f4f6"}}>
+                      {["Товар","Кол-во","Стоимость","Выдано","Вернуть до","Статус","№ СЗ","Цель"].map(h=>(
+                        <th key={h} style={{padding:"8px 14px",textAlign:"left",fontSize:11,color:"#9ca3af",fontWeight:600}}>{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {items.map((c,i)=>{
+                        const isOD=c.dueDate&&c.dueDate<TODAY;
+                        const days=c.dueDate?Math.floor((new Date()-new Date(c.dueDate))/86400000):null;
+                        const price=products.find(p=>p.id===c.productId)?.price||0;
+                        return (
+                          <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:isOD?"#fff8f8":"white"}}>
+                            <td style={{padding:"9px 14px",fontWeight:500,color:"#1f2937"}}>{gp(c.productId)}</td>
+                            <td style={{padding:"9px 14px",fontWeight:700,color:"#2563eb"}}>{c.remaining}</td>
+                            <td style={{padding:"9px 14px",fontSize:12,color:"#374151"}}>{som(c.remaining*price)}</td>
+                            <td style={{padding:"9px 14px",color:"#9ca3af",fontFamily:"monospace",fontSize:11}}>{c.date}</td>
+                            <td style={{padding:"9px 14px",color:"#9ca3af",fontFamily:"monospace",fontSize:11}}>{c.dueDate||"—"}</td>
+                            <td style={{padding:"9px 14px"}}>{isOD
+                              ?<span style={{background:"#fef2f2",color:"#dc2626",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:700}}>+{days} дн</span>
+                              :<span style={{background:"#f0fdf4",color:"#16a34a",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600}}>В срок</span>}
+                            </td>
+                            <td style={{padding:"9px 14px",color:"#6b7280",fontSize:11,fontFamily:"monospace"}}>{c.szDocumentNumber||"—"}</td>
+                            <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:12}}>{c.purpose||"—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ====== ПОЛЬЗОВАТЕЛИ ======
+    function UsersView({users,setUsers,showToast,can,currentUser,branches}){
+      const [newUser,setNewUser]=useState({name:"",password:"",role:"employee",branchId:1});
+      const ROLE_COLORS={admin:["#fef3c7","#92400e"],director:["#ede9fe","#5b21b6"],manager:["#dbeafe","#1e40af"],employee:["#f0fdf4","#166534"]};
+      const addUser=()=>{
+        if(!newUser.name.trim()||!newUser.password.trim()){showToast("Заполните логин и пароль",false);return;}
+        if(users.some(u=>u.name===newUser.name)){showToast("Логин уже существует",false);return;}
+        const id=Math.max(0,...users.map(u=>u.id))+1;
+        setUsers(prev=>[...prev,{...newUser,id,branchId:Number(newUser.branchId)}]);
         setNewUser({name:"",password:"",role:"employee",branchId:1});
         showToast("Пользователь добавлен");
       };
-      const removeUser = (id) => {
+      const removeUser=id=>{
         if(id===currentUser.id){showToast("Нельзя удалить себя",false);return;}
-        setUsers(prev => prev.filter(u=>u.id!==id));
+        setUsers(prev=>prev.filter(u=>u.id!==id));
         showToast("Пользователь удалён");
       };
       return (
-        <div style={{padding:20,height:"100%",overflow:"auto"}}>
-          <div style={{background:"white",borderRadius:12,padding:16,marginBottom:16}}>
-            <div style={{fontWeight:700,marginBottom:12}}>Добавить пользователя</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:10}}>
-              <input value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="Логин" style={INP}/>
-              <input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="Пароль" style={INP} type="password"/>
-              <select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} style={INP}>{Object.entries(ROLES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>
-              <select value={newUser.branchId} onChange={e=>setNewUser({...newUser,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
-              <button onClick={addUser} style={{background:"#10b981",color:"white",border:"none",borderRadius:8,fontWeight:600}}>+</button>
-            </div>
+        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#1f2937"}}>Пользователи системы</div>
           </div>
-          <div style={{background:"white",borderRadius:12,overflow:"hidden"}}>
-            {users.map(u=><div key={u.id} style={{display:"flex",justifyContent:"space-between",padding:"10px 16px",borderBottom:"1px solid #eee"}}><span>{u.name} ({ROLES[u.role]})</span>{can("admin")&&u.id!==currentUser.id&&<button onClick={()=>removeUser(u.id)} style={{color:"#dc2626"}}>Удалить</button>}</div>)}
+          <div style={{flex:1,overflow:"auto",padding:20}}>
+            {can("admin")&&(
+              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:16,marginBottom:16}}>
+                <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>Добавить пользователя</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+                  <div><div style={LBL}>Логин</div><input value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="Имя пользователя" style={INP}/></div>
+                  <div><div style={LBL}>Пароль</div><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="Пароль" style={INP} type="password"/></div>
+                  <div><div style={LBL}>Роль</div><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} style={INP}>{Object.entries(ROLES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
+                  <div><div style={LBL}>Филиал</div><select value={newUser.branchId} onChange={e=>setNewUser({...newUser,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+                  <button onClick={addUser} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+                </div>
+              </div>
+            )}
+            <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
+              {users.map((u,i)=>(
+                <div key={u.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:i<users.length-1?"1px solid #f3f4f6":"none",background:i%2?"#fafafa":"white"}}>
+                  <div style={{width:36,height:36,borderRadius:10,background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>
+                    {u.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,color:"#1f2937",fontSize:13}}>{u.name}{u.id===currentUser.id&&<span style={{marginLeft:8,fontSize:10,color:"#6366f1",fontWeight:700}}>ВЫ</span>}</div>
+                    <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>ID {u.id} · {branches.find(b=>b.id===u.branchId)?.name||"—"}</div>
+                  </div>
+                  <span style={{background:ROLE_COLORS[u.role]?.[0]||"#f3f4f6",color:ROLE_COLORS[u.role]?.[1]||"#374151",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600}}>{ROLES[u.role]}</span>
+                  {can("admin")&&u.id!==currentUser.id&&(
+                    <button onClick={()=>removeUser(u.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600}}>Удалить</button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );
     }
-    function SettingsView({...args}) { return <div>SettingsView</div>; }
+
+    // ====== СПРАВОЧНИКИ ======
+    function SettingsView(props){
+      const [tab,setTab]=useState("categories");
+      const TABS = [
+        {id:"categories",label:"Категории",icon:"🏷️"},
+        {id:"types",label:"Типы продуктов",icon:"📋"},
+        {id:"locations",label:"Места хранения",icon:"📍"},
+        {id:"suppliers",label:"Поставщики",icon:"🚚"},
+        {id:"directions",label:"Направления",icon:"🎯"},
+        {id:"branches",label:"Филиалы",icon:"🏢"},
+        {id:"recipients",label:"Получатели",icon:"👤"},
+      ];
+      return (
+        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#1f2937",marginBottom:12}}>Справочники</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {TABS.map(t=>(
+                <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 14px",borderRadius:8,border:"1px solid",fontSize:12,cursor:"pointer",fontWeight:600,background:tab===t.id?"#1a1d2e":"white",borderColor:tab===t.id?"#1a1d2e":"#e5e7eb",color:tab===t.id?"white":"#374151"}}>{t.icon} {t.label}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{flex:1,overflow:"auto",padding:20}}>
+            {tab==="categories"&&<CategoriesTab {...props}/>}
+            {tab==="types"&&<ProductTypesTab {...props}/>}
+            {tab==="locations"&&<LocationsTab {...props}/>}
+            {tab==="suppliers"&&<SuppliersTab {...props}/>}
+            {tab==="directions"&&<DirectionsTab {...props}/>}
+            {tab==="branches"&&<BranchesTab {...props}/>}
+            {tab==="recipients"&&<RecipientsTab {...props}/>}
+          </div>
+        </div>
+      );
+    }
+
+    function SettingsCard({title,children}){
+      return (
+        <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:16,marginBottom:16}}>
+          <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>{title}</div>
+          {children}
+        </div>
+      );
+    }
+    function SettingsList({items,renderRow,empty}){
+      return (
+        <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
+          {items.length===0
+            ?<div style={{padding:30,textAlign:"center",color:"#9ca3af",fontSize:13}}>{empty||"Пусто"}</div>
+            :items.map((it,i)=>(
+              <div key={it.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:i<items.length-1?"1px solid #f3f4f6":"none",background:i%2?"#fafafa":"white"}}>
+                {renderRow(it)}
+              </div>
+            ))}
+        </div>
+      );
+    }
+    const DelBtn = ({onClick}) => (
+      <button onClick={onClick} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600}}>Удалить</button>
+    );
+
+    function CategoriesTab({customCategories,setCustomCategories,products,showToast,can}){
+      const ICONS = ["👕","✏️","⚡","🎒","📄","📦","🎁","🍕","🛍️","🎨","🔧","💼","📚","🚗","💎","🏆"];
+      const COLORS = ["#f97316","#3b82f6","#8b5cf6","#ec4899","#10b981","#64748b","#dc2626","#f59e0b","#06b6d4","#84cc16"];
+      const [form,setForm]=useState({name:"",color:"#6366f1",icon:"📦"});
+      const add=()=>{
+        if(!form.name.trim()){showToast("Введите название",false);return;}
+        if(customCategories.some(c=>c.id===form.name||c.name===form.name)){showToast("Уже существует",false);return;}
+        setCustomCategories(p=>[...p,{id:form.name,name:form.name,color:form.color,icon:form.icon}]);
+        setForm({name:"",color:"#6366f1",icon:"📦"});showToast("Категория добавлена");
+      };
+      const del=id=>{
+        if(products.some(p=>p.categoryId===id)){showToast("Категория используется",false);return;}
+        setCustomCategories(p=>p.filter(c=>c.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить категорию">
+          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",gap:10,alignItems:"end"}}>
+            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Например: Сувениры" style={INP}/></div>
+            <div><div style={LBL}>Иконка</div>
+              <select value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} style={{...INP,width:60,fontSize:18,textAlign:"center"}}>
+                {ICONS.map(ic=><option key={ic} value={ic}>{ic}</option>)}
+              </select>
+            </div>
+            <div><div style={LBL}>Цвет</div>
+              <select value={form.color} onChange={e=>setForm({...form,color:e.target.value})} style={{...INP,background:form.color+"30",color:form.color,fontWeight:700}}>
+                {COLORS.map(c=><option key={c} value={c} style={{background:"white",color:c}}>{c}</option>)}
+              </select>
+            </div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={customCategories} empty="Категорий нет" renderRow={c=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:c.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{c.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{c.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>Товаров: {products.filter(p=>p.categoryId===c.id).length}</div>
+            </div>
+            <span style={{background:c.color+"20",color:c.color,padding:"2px 10px",borderRadius:8,fontSize:11,fontWeight:600}}>{c.color}</span>
+            {can("admin")&&<DelBtn onClick={()=>del(c.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function ProductTypesTab({productTypes,setProductTypes,products,showToast,can}){
+      const [name,setName]=useState("");
+      const add=()=>{
+        if(!name.trim()){showToast("Введите название",false);return;}
+        const id="t"+(Math.max(0,...productTypes.map(p=>Number(p.id.replace("t",""))||0))+1);
+        setProductTypes(p=>[...p,{id,name}]);setName("");showToast("Тип добавлен");
+      };
+      const del=id=>{
+        if(products.some(p=>p.productTypeId===id)){showToast("Тип используется",false);return;}
+        setProductTypes(p=>p.filter(t=>t.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить тип продукта">
+          <div style={{display:"flex",gap:10,alignItems:"end"}}>
+            <div style={{flex:1}}><div style={LBL}>Название</div><input value={name} onChange={e=>setName(e.target.value)} placeholder="Например: Сумка" style={INP}/></div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={productTypes} empty="Типов нет" renderRow={t=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#3b82f6"}}>📋</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{t.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>ID {t.id} · Товаров: {products.filter(p=>p.productTypeId===t.id).length}</div>
+            </div>
+            {can("admin")&&<DelBtn onClick={()=>del(t.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function LocationsTab({locations,setLocations,branches,products,showToast,can}){
+      const [form,setForm]=useState({name:"",branchId:branches[0]?.id||1});
+      const add=()=>{
+        if(!form.name.trim()){showToast("Введите название",false);return;}
+        const id=Math.max(0,...locations.map(l=>l.id))+1;
+        setLocations(p=>[...p,{id,name:form.name,branchId:Number(form.branchId)}]);
+        setForm({name:"",branchId:branches[0]?.id||1});showToast("Место добавлено");
+      };
+      const del=id=>{
+        if(products.some(p=>p.locationId===id)){showToast("Место используется",false);return;}
+        setLocations(p=>p.filter(l=>l.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить место хранения">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="A1·П3" style={INP}/></div>
+            <div><div style={LBL}>Филиал</div><select value={form.branchId} onChange={e=>setForm({...form,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={locations} empty="Мест нет" renderRow={l=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#fef3c7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#92400e"}}>📍</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{l.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>{branches.find(b=>b.id===l.branchId)?.name||"—"} · Товаров: {products.filter(p=>p.locationId===l.id).length}</div>
+            </div>
+            {can("admin")&&<DelBtn onClick={()=>del(l.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function SuppliersTab({suppliers,setSuppliers,products,movements,showToast,can}){
+      const [form,setForm]=useState({name:"",contact:"",inn:""});
+      const add=()=>{
+        if(!form.name.trim()){showToast("Введите название",false);return;}
+        const id=Math.max(0,...suppliers.map(s=>s.id))+1;
+        setSuppliers(p=>[...p,{id,...form}]);
+        setForm({name:"",contact:"",inn:""});showToast("Поставщик добавлен");
+      };
+      const del=id=>{
+        if(products.some(p=>p.supplierId===id)||movements.some(m=>m.supplierId===id)){showToast("Поставщик используется",false);return;}
+        setSuppliers(p=>p.filter(s=>s.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить поставщика">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="ООО ..." style={INP}/></div>
+            <div><div style={LBL}>Контакт</div><input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="+996 ..." style={INP}/></div>
+            <div><div style={LBL}>ИНН</div><input value={form.inn} onChange={e=>setForm({...form,inn:e.target.value})} placeholder="14 цифр" style={INP}/></div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={suppliers} empty="Поставщиков нет" renderRow={s=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#ede9fe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#5b21b6"}}>🚚</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{s.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>{s.contact} {s.inn?`· ИНН ${s.inn}`:""}</div>
+            </div>
+            {can("admin")&&<DelBtn onClick={()=>del(s.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function DirectionsTab({directions,setDirections,products,showToast,can}){
+      const [name,setName]=useState("");
+      const add=()=>{
+        if(!name.trim()){showToast("Введите название",false);return;}
+        const id=Math.max(0,...directions.map(d=>d.id))+1;
+        setDirections(p=>[...p,{id,name}]);setName("");showToast("Направление добавлено");
+      };
+      const del=id=>{
+        if(products.some(p=>p.directionId===id)){showToast("Направление используется",false);return;}
+        setDirections(p=>p.filter(d=>d.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить направление">
+          <div style={{display:"flex",gap:10,alignItems:"end"}}>
+            <div style={{flex:1}}><div style={LBL}>Название</div><input value={name} onChange={e=>setName(e.target.value)} placeholder="Например: Маркетинг" style={INP}/></div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={directions} empty="Направлений нет" renderRow={d=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#166534"}}>🎯</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{d.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>Товаров: {products.filter(p=>p.directionId===d.id).length}</div>
+            </div>
+            {can("admin")&&<DelBtn onClick={()=>del(d.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function BranchesTab({branches,setBranches,locations,users,recipients,showToast,can}){
+      const [form,setForm]=useState({name:"",city:"",head:""});
+      const add=()=>{
+        if(!form.name.trim()){showToast("Введите название",false);return;}
+        const id=Math.max(0,...branches.map(b=>b.id))+1;
+        setBranches(p=>[...p,{id,...form}]);
+        setForm({name:"",city:"",head:""});showToast("Филиал добавлен");
+      };
+      const del=id=>{
+        if(locations.some(l=>l.branchId===id)||users.some(u=>u.branchId===id)||recipients.some(r=>r.branchId===id)){showToast("Филиал используется",false);return;}
+        setBranches(p=>p.filter(b=>b.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("admin")&&<SettingsCard title="Добавить филиал">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Филиал X" style={INP}/></div>
+            <div><div style={LBL}>Город</div><input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} placeholder="Бишкек" style={INP}/></div>
+            <div><div style={LBL}>Руководитель</div><input value={form.head} onChange={e=>setForm({...form,head:e.target.value})} placeholder="ФИО" style={INP}/></div>
+            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={branches} empty="Филиалов нет" renderRow={b=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#dbeafe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#1e40af"}}>🏢</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{b.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>{b.city} · {b.head} · Локаций: {locations.filter(l=>l.branchId===b.id).length}</div>
+            </div>
+            {can("admin")&&<DelBtn onClick={()=>del(b.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
+
+    function RecipientsTab({recipients,setRecipients,branches,movements,showToast,can}){
+      const [form,setForm]=useState({name:"",branchId:branches[0]?.id||1,szId:"",branchHead:""});
+      const add=()=>{
+        if(!form.name.trim()){showToast("Введите имя",false);return;}
+        const id=Math.max(0,...recipients.map(r=>r.id))+1;
+        setRecipients(p=>[...p,{id,...form,branchId:Number(form.branchId)}]);
+        setForm({name:"",branchId:branches[0]?.id||1,szId:"",branchHead:""});showToast("Получатель добавлен");
+      };
+      const del=id=>{
+        if(movements.some(m=>m.recipientId===id)){showToast("Получатель уже использовался",false);return;}
+        setRecipients(p=>p.filter(r=>r.id!==id));showToast("Удалено");
+      };
+      return <>
+        {can("edit")&&<SettingsCard title="Добавить получателя">
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <div><div style={LBL}>Имя</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="ФИО / отдел" style={INP}/></div>
+            <div><div style={LBL}>Филиал</div><select value={form.branchId} onChange={e=>setForm({...form,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
+            <div><div style={LBL}>№ СЗ</div><input value={form.szId} onChange={e=>setForm({...form,szId:e.target.value})} placeholder="СЗ-..." style={INP}/></div>
+            <div><div style={LBL}>Руководитель</div><input value={form.branchHead} onChange={e=>setForm({...form,branchHead:e.target.value})} placeholder="ФИО" style={INP}/></div>
+            <button onClick={add} style={{background:"#10b981",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
+          </div>
+        </SettingsCard>}
+        <SettingsList items={recipients} empty="Получателей нет" renderRow={r=>(
+          <>
+            <div style={{width:36,height:36,borderRadius:10,background:"#10b981",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"white",fontWeight:700}}>{r.name.charAt(0).toUpperCase()}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:13}}>{r.name}</div>
+              <div style={{fontSize:11,color:"#9ca3af"}}>{branches.find(b=>b.id===r.branchId)?.name||"—"} {r.szId?`· ${r.szId}`:""} {r.branchHead?`· ${r.branchHead}`:""}</div>
+            </div>
+            {can("edit")&&<DelBtn onClick={()=>del(r.id)}/>}
+          </>
+        )}/>
+      </>;
+    }
 
     // ====== ГЛАВНЫЙ КОМПОНЕНТ ======
-    function App() {
-      const loadState = (key, def) => {try{const s=localStorage.getItem(key);return s?JSON.parse(s):def;}catch{return def;}};
-      const [users,setUsers] = useState(loadState("users", INIT_USERS));
+    function App(){
+      const loadState = (key,def) => {try{const s=localStorage.getItem(key);return s?JSON.parse(s):def;}catch{return def;}};
+      const [users,setUsers] = useState(loadState("users",INIT_USERS));
       const [currentUser,setCurrentUser] = useState(null);
-      const [customCategories,setCustomCategories] = useState(loadState("categories", DEFAULT_CATEGORIES));
-      const [productTypes,setProductTypes] = useState(loadState("productTypes", DEFAULT_PRODUCT_TYPES));
-      const [locations,setLocations] = useState(loadState("locations", INIT_LOCATIONS));
-      const [suppliers,setSuppliers] = useState(loadState("suppliers", INIT_SUPPLIERS));
-      const [directions,setDirections] = useState(loadState("directions", INIT_DIRECTIONS));
-      const [branches,setBranches] = useState(loadState("branches", INIT_BRANCHES));
-      const [products,setProducts] = useState(loadState("products", INIT_PRODUCTS));
-      const [movements,setMovements] = useState(loadState("movements", INIT_MOVEMENTS));
-      const [recipients,setRecipients] = useState(loadState("recipients", INIT_RECIPIENTS));
+      const [customCategories,setCustomCategories] = useState(loadState("categories",DEFAULT_CATEGORIES));
+      const [productTypes,setProductTypes] = useState(loadState("productTypes",DEFAULT_PRODUCT_TYPES));
+      const [locations,setLocations] = useState(loadState("locations",INIT_LOCATIONS));
+      const [suppliers,setSuppliers] = useState(loadState("suppliers",INIT_SUPPLIERS));
+      const [directions,setDirections] = useState(loadState("directions",INIT_DIRECTIONS));
+      const [branches,setBranches] = useState(loadState("branches",INIT_BRANCHES));
+      const [products,setProducts] = useState(loadState("products",INIT_PRODUCTS));
+      const [movements,setMovements] = useState(loadState("movements",INIT_MOVEMENTS));
+      const [recipients,setRecipients] = useState(loadState("recipients",INIT_RECIPIENTS));
       const [view,setView] = useState("items");
-      const [uid,setUid] = useState(loadState("uid", 50));
+      const [uid,setUid] = useState(loadState("uid",50));
       const [toast,setToast] = useState(null);
 
       useEffect(()=>{localStorage.setItem("users",JSON.stringify(users));},[users]);
@@ -391,31 +1045,43 @@
 
       if(!currentUser) return <LoginScreen users={users} setCurrentUser={setCurrentUser} showToast={showToast} />;
 
-      const shared = {users,setUsers,products,setProducts,stock,movements,setMovements,activeCheckouts,overdue,addMov,can,gp,gr,gb,currentUser,recipients,setRecipients,showToast,customCategories,productTypes,locations,suppliers,directions,branches,setBranches,userBranchId,isRestricted};
+      const shared = {users,setUsers,products,setProducts,stock,movements,setMovements,activeCheckouts,overdue,addMov,can,gp,gr,gb,currentUser,recipients,setRecipients,showToast,customCategories,setCustomCategories,productTypes,setProductTypes,locations,setLocations,suppliers,setSuppliers,directions,setDirections,branches,setBranches,userBranchId,isRestricted};
+
       const NAV = [
         {id:"items",label:"Товары",icon:<IcoBox/>},
         {id:"activity",label:"Движения",icon:<IcoActivity/>,badge:overdue.length},
         {id:"branches",label:"Филиалы",icon:<IcoBranch/>},
-        {id:"users",label:"Пользователи",icon:<IcoUsers/>},
-        {id:"settings",label:"Справочники",icon:<IcoSettings/>},
+        {id:"users",label:"Пользователи",icon:<IcoUsers/>,adminOnly:true},
+        {id:"settings",label:"Справочники",icon:<IcoSettings/>,adminOnly:true},
       ];
 
       return (
-        <div style={{display:"flex",height:"100vh",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",background:"#f5f6fa",overflow:"hidden"}}>
+        <div style={{display:"flex",height:"100vh",background:"#f5f6fa",overflow:"hidden"}}>
           <aside style={{width:220,background:"#1a1d2e",display:"flex",flexDirection:"column",flexShrink:0}}>
             <div style={{padding:"20px 16px 16px",borderBottom:"1px solid #2a2d3e"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:32,height:32,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📦</div><div><div style={{fontWeight:700,fontSize:14,color:"white"}}>МКТ·СКЛАД</div><div style={{fontSize:10,color:"#4a5568"}}>v2.1</div></div></div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:32,height:32,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📦</div>
+                <div>
+                  <div style={{fontWeight:700,fontSize:14,color:"white"}}>МКТ·СКЛАД</div>
+                  <div style={{fontSize:10,color:"#4a5568"}}>v2.2</div>
+                </div>
+              </div>
             </div>
-            <div style={{padding:"8px 8px",flex:1}}>
+            <div style={{padding:"8px 8px",flex:1,overflowY:"auto"}}>
               {NAV.map(item=>{
-                if((item.id==="users"||item.id==="settings")&&!can("admin"))return null;
+                if(item.adminOnly&&!can("admin"))return null;
                 const active=view===item.id;
-                return <button key={item.id} onClick={()=>setView(item.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",marginBottom:2,background:active?"#2d3150":"transparent",border:"none",borderRadius:8,color:active?"white":"#6b7280",fontSize:13,textAlign:"left",fontWeight:active?600:400}}><span style={{opacity:active?1:0.6}}>{item.icon}</span><span>{item.label}</span>{item.badge>0&&<span style={{marginLeft:"auto",background:"#ef4444",color:"white",borderRadius:10,padding:"1px 6px",fontSize:10,fontWeight:700}}>{item.badge}</span>}</button>
+                return <button key={item.id} onClick={()=>setView(item.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",marginBottom:2,background:active?"#2d3150":"transparent",border:"none",borderRadius:8,color:active?"white":"#6b7280",fontSize:13,textAlign:"left",fontWeight:active?600:400,cursor:"pointer"}}>
+                  <span style={{opacity:active?1:0.6,display:"flex"}}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  {item.badge>0&&<span style={{marginLeft:"auto",background:"#ef4444",color:"white",borderRadius:10,padding:"1px 6px",fontSize:10,fontWeight:700}}>{item.badge}</span>}
+                </button>
               })}
             </div>
             <div style={{padding:"12px 12px",borderTop:"1px solid #2a2d3e"}}>
-              <div style={{fontSize:12,color:"white",marginBottom:4}}>{currentUser.name} — {ROLES[role]}</div>
-              <button onClick={()=>setCurrentUser(null)} style={{background:"#ef4444",color:"white",border:"none",padding:"6px 12px",borderRadius:6,fontSize:12,width:"100%"}}>Выйти</button>
+              <div style={{fontSize:12,color:"white",marginBottom:2,fontWeight:600}}>{currentUser.name}</div>
+              <div style={{fontSize:10,color:"#6b7280",marginBottom:8}}>{ROLES[role]} · {branches.find(b=>b.id===userBranchId)?.name||"—"}</div>
+              <button onClick={()=>setCurrentUser(null)} style={{background:"#2a2d3e",color:"white",border:"none",padding:"6px 12px",borderRadius:6,fontSize:11,width:"100%",fontWeight:600}}>Выйти</button>
             </div>
           </aside>
           <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
@@ -423,7 +1089,7 @@
             {view==="activity"&&<ActivityView {...shared}/>}
             {view==="branches"&&<BranchesView {...shared}/>}
             {view==="users"&&<UsersView {...shared}/>}
-            {view==="settings"&&<SettingsView {...shared} setProductTypes={setProductTypes} productTypes={productTypes} setCustomCategories={setCustomCategories} setLocations={setLocations} setSuppliers={setSuppliers} setDirections={setDirections} setBranches={setBranches} can={can} showToast={showToast}/>}
+            {view==="settings"&&<SettingsView {...shared}/>}
           </div>
           {toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:toast.ok?"#1a1d2e":"#dc2626",color:"white",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:600,boxShadow:"0 8px 24px rgba(0,0,0,0.2)",zIndex:1000,display:"flex",alignItems:"center",gap:8}}><span>{toast.ok?"✓":"✕"}</span>{toast.msg}</div>}
         </div>
