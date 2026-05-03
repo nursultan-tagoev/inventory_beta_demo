@@ -353,21 +353,35 @@ const RTDot=({on})=><div style={{display:"flex",alignItems:"center",gap:5}}>
 /* ══ SIDEBAR ══════════════════════════════════════════════════════════ */
 function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
   const r=profile.role;
-  const groups=[
-    {items:[
-      {id:"home",    l:"Главная",       ico:"⌂"},
-      {id:"items",   l:"Товары",        ico:"◻"},
-      {id:"activity",l:"Движения",      ico:"↕",badge:overdueCount},
-      {id:"branches",l:"Филиалы",       ico:"◎"},
-      {id:"recipients",l:"Получатели",  ico:"◉"},
-    ]},
-    {label:"Управление",admin:true,items:[
-      {id:"reports",   l:"Отчёты",        ico:"≡"},
-      {id:"suppliers", l:"Поставщики",    ico:"◈"},
-      {id:"settings",  l:"Справочники",   ico:"⚙"},
-      {id:"users",     l:"Пользователи",  ico:"◉"},
-    ]}
-  ].filter(g=>!g.admin||(r==="admin"||r==="director"));
+  /* Nav видимость по ролям:
+     home/items/activity  — все
+     branches/recipients  — admin, director, manager
+     reports/suppliers    — admin, director
+     settings/users       — только admin
+  */
+  const NAV_MAIN = [
+    {id:"home",     l:"Главная",     ico:"⌂"},
+    {id:"items",    l:"Товары",      ico:"◻"},
+    {id:"activity", l:"Движения",    ico:"↕", badge:overdueCount},
+    ...(r==="admin"||r==="director"||r==="manager"
+      ? [{id:"branches",   l:"Филиалы",    ico:"◎"},
+         {id:"recipients", l:"Получатели", ico:"◉"}]
+      : []),
+  ];
+  const NAV_MGMT = [
+    ...(r==="admin"||r==="director"
+      ? [{id:"reports",  l:"Отчёты",      ico:"≡"},
+         {id:"suppliers",l:"Поставщики",  ico:"◈"}]
+      : []),
+    ...(r==="admin"
+      ? [{id:"settings", l:"Справочники", ico:"⚙"},
+         {id:"users",    l:"Пользователи",ico:"◉"}]
+      : []),
+  ];
+  const groups = [
+    {items: NAV_MAIN},
+    ...(NAV_MGMT.length ? [{label:"Управление", items:NAV_MGMT}] : []),
+  ];
   return<aside style={{width:220,background:"var(--nav)",display:"flex",flexDirection:"column",flexShrink:0}}>
     <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -441,14 +455,18 @@ function Home({S,stock,checkouts,setView}){
         </div>
         <Btn v="secondary" onClick={()=>setView("items")}>Все товары →</Btn>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+      {can("move")&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
         <ActionCard ico="📥" type="in"     accent="var(--gr)"  title="Принять товар"  sub="Новая поставка от поставщика"/>
         <ActionCard ico="📤" type="out"    accent="var(--ink)" title={lastOut?"Повторить выдачу":"Выдать товар"}
           sub={lastOut?`→ ${rName(lastOut.recipient_id)} · ${pName(lastOut.product_id)}`:"На мероприятие или акцию"}
           prefill={lastOut?{product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz}:{}}
           tag={lastOut?"⟳ Повторить":null}/>
         <ActionCard ico="🔄" type="return" accent="var(--pu)"  title="Принять возврат" sub="Сотрудник вернул товар"/>
-      </div>
+      </div>}
+      {!can("move")&&<div style={{padding:"16px 18px",background:"var(--bg)",borderRadius:12,border:"1px solid var(--brd)",fontSize:13,color:"var(--tx3)",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>👁</span>
+        <span>Режим просмотра. Операции доступны маркетологам и администраторам.</span>
+      </div>}
     </div>
 
     <div style={{padding:24}}>
@@ -528,7 +546,8 @@ function ItemsView({S,stock,checkouts}){
   const{products,setProducts,categories,suppliers,directions,locations,productTypes,recipients,can,toast,profile}=S;
   const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
   const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
-  const visible=products.filter(p=>!p.archived);
+  const {isRestricted,userBranchId}=S;
+  const visible=products.filter(p=>!p.archived&&(!isRestricted||locations.find(l=>l.id===p.location_id)?.branch_id===userBranchId));
   const filtered=visible.filter(p=>(catF==="all"||p.category_id===catF)&&(!search||p.name?.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())));
   const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:""});
   const saveProduct=async()=>{if(!form.name.trim()){toast("Укажите название","error");return}setL(true);const{error}=await sb.from("products").insert({name:form.name,sku:form.sku||null,category_id:form.category_id?Number(form.category_id)||form.category_id:null,price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,supplier_id:form.supplier_id?Number(form.supplier_id):null,product_type_id:form.product_type_id?Number(form.product_type_id)||form.product_type_id:null,direction_id:form.direction_id?Number(form.direction_id):null,archived:false});if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}setL(false)};
@@ -686,7 +705,7 @@ function ItemModal({p,stock,S,checkouts,onClose}){
 
 /* ══ ACTIVITY VIEW ════════════════════════════════════════════════════ */
 function ActivityView({S,checkouts,overdue}){
-  const{movements,products,recipients,suppliers,branches,can,toast,profile}=S;
+  const {movements,products,recipients,suppliers,branches,can,toast,profile,isRestricted,userBranchId}=S;
   const[typeF,setTypeF]=useState("all");const[brF,setBrF]=useState("");const[search,setSrch]=useState("");const[sheet,setSheet]=useState(null);
   const[dateFrom,setDF]=useState("");const[dateTo,setDT]=useState(TODAY);
   const pName=id=>products.find(p=>p.id===id)?.name??"—";
@@ -694,6 +713,7 @@ function ActivityView({S,checkouts,overdue}){
   const brName=id=>branches.find(b=>b.id===id)?.name??"—";
   const filtered=[...movements].filter(m=>{
     if(typeF!=="all"&&m.type!==typeF)return false;
+    if(isRestricted&&m.branch_id!==userBranchId&&m.issuer_id!==profile?.id)return false;
     if(brF&&m.branch_id!=brF)return false;
     const d=(m.date||m.created_at||"").slice(0,10);
     if(dateFrom&&d<dateFrom)return false;
@@ -754,10 +774,11 @@ function ActivityView({S,checkouts,overdue}){
 
 /* ══ BRANCHES VIEW ════════════════════════════════════════════════════ */
 function BranchesView({S,stock,checkouts}){
-  const{branches,products,recipients,toast,profile}=S;
-  const[sel,setSel]=useState(branches[0]?.id||null);
+  const{branches,products,recipients,toast,profile,isRestricted,userBranchId}=S;
+  const visibleBranches=isRestricted?branches.filter(b=>b.id===userBranchId):branches;
+  const[sel,setSel]=useState(null);
   const[confirm,setConfirm]=useState(null);
-  useEffect(()=>{if(!sel&&branches.length)setSel(branches[0].id)},[branches]);
+  useEffect(()=>{if(!sel&&visibleBranches.length)setSel(visibleBranches[0].id)},[visibleBranches.length]);
   const branch=branches.find(b=>b.id===sel);
   const bOuts=checkouts.filter(c=>c.branch_id===sel);
   const byRec={};bOuts.forEach(c=>{if(!byRec[c.recipient_id])byRec[c.recipient_id]=[];byRec[c.recipient_id].push(c)});
@@ -770,7 +791,7 @@ function BranchesView({S,stock,checkouts}){
     {confirm&&<Confirm title="Оформить возврат?" message={`Возврат ${confirm.remaining} шт "${pName(confirm.product_id)}" от ${rName(confirm.recipient_id)}`} onOk={()=>doReturn(confirm)} onCancel={()=>setConfirm(null)}/>}
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
       <span className="ff" style={{fontSize:17,fontWeight:700,display:"block",marginBottom:12}}>Кто что взял — по филиалам</span>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{branches.map(b=>{const cnt=checkouts.filter(c=>c.branch_id===b.id).reduce((a,c)=>a+c.remaining,0);const act=sel===b.id;return<button key={b.id} onClick={()=>setSel(b.id)} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 16px",borderRadius:10,border:`1px solid ${act?"var(--ink)":"var(--brd)"}`,background:act?"var(--ink-l)":"var(--sur)",color:act?"var(--ink)":"var(--tx)",fontSize:13,fontWeight:act?600:400,cursor:"pointer",transition:"all .12s"}}>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{visibleBranches.map(b=>{const cnt=checkouts.filter(c=>c.branch_id===b.id).reduce((a,c)=>a+c.remaining,0);const act=sel===b.id;return<button key={b.id} onClick={()=>setSel(b.id)} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 16px",borderRadius:10,border:`1px solid ${act?"var(--ink)":"var(--brd)"}`,background:act?"var(--ink-l)":"var(--sur)",color:act?"var(--ink)":"var(--tx)",fontSize:13,fontWeight:act?600:400,cursor:"pointer",transition:"all .12s"}}>
       <span style={{width:6,height:6,borderRadius:"50%",background:cnt>0?"var(--ink)":"var(--brd)"}}/>{b.name}{cnt>0&&<Badge color={act?"ink":"slate"} size="xs">{cnt}</Badge>}
     </button>})}</div>
     </div>
@@ -1102,9 +1123,34 @@ function App(){
 
   const stock=useStock(data.movements);const checkouts=useCheckouts(data.movements);
   const overdue=useMemo(()=>checkouts.filter(c=>c.due_date&&c.due_date<TODAY),[checkouts]);
-  const can=useCallback(a=>{if(!profile)return false;const r=profile.role;if(a==="admin")return r==="admin";if(a==="edit")return r==="admin"||r==="manager";if(a==="move")return r==="admin"||r==="manager";return true},[profile]);
+  /*
+   * Матрица прав:
+   *   admin    — всё, все филиалы
+   *   director — просмотр всего (все филиалы), без операций и редактирования
+   *   manager  — операции (Приход/Выдача/Возврат), добавление товаров, только свой филиал
+   *   employee — только просмотр, только свой филиал
+   */
+  const can=useCallback(a=>{
+    if(!profile)return false;
+    const r=profile.role;
+    switch(a){
+      case "admin":     return r==="admin";
+      case "settings":  return r==="admin";                          // справочники + пользователи
+      case "reports":   return r==="admin"||r==="director";          // отчёты
+      case "suppliers": return r==="admin"||r==="director";          // поставщики
+      case "edit":      return r==="admin"||r==="manager";           // добавление товаров
+      case "move":      return r==="admin"||r==="manager";           // операции (выдача/приход/возврат)
+      case "branches":  return r==="admin"||r==="director"||r==="manager"; // раздел филиалов
+      case "recipients":return r==="admin"||r==="director"||r==="manager";
+      default:          return true;                                  // просмотр — все
+    }
+  },[profile]);
 
-  const S={...data,profile,can,toast};
+  // Ограничение по филиалу: manager и employee видят только свои данные
+  const isRestricted = profile && (profile.role==="manager"||profile.role==="employee");
+  const userBranchId = profile?.branch_id;
+
+  const S={...data,profile,can,toast,isRestricted,userBranchId};
   const shared={S,stock,checkouts,overdue,setView};
 
   if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}><Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span></div>;
@@ -1116,6 +1162,16 @@ function App(){
     ...(can("admin")||can("director")?[{id:"reports",l:"Отчёты"},{id:"suppliers",l:"Поставщики"},{id:"settings",l:"Справочники"},{id:"users",l:"Пользователи"}]:[])
   ];
   // sidebar uses groups internally
+
+  // Защита роутов: если view недоступен для роли — сбрасываем на home
+  const r=profile.role;
+  const ALLOWED_VIEWS={
+    admin:    ["home","items","activity","branches","recipients","reports","suppliers","settings","users"],
+    director: ["home","items","activity","branches","recipients","reports","suppliers"],
+    manager:  ["home","items","activity","branches","recipients"],
+    employee: ["home","items","activity"],
+  }[r]||["home","items","activity"];
+  const safeView=ALLOWED_VIEWS.includes(view)?view:"home";
 
   const VIEWS={
     home:       <Home       {...shared}/>,
@@ -1133,7 +1189,7 @@ function App(){
     <Sidebar view={view} setView={setView} profile={profile} rtOn={rtOn} overdueCount={overdue.length}
       onLogout={async()=>{await sb.auth.signOut();setProfile(null);toast("До свидания!")}}/>
     <main style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-      {VIEWS[view]||<div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Раздел недоступен</div>}
+      {VIEWS[safeView]||<div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Раздел недоступен</div>}
     </main>
     <Toasts ts={ts}/>
   </div>
