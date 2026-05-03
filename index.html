@@ -326,7 +326,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
         </Sel></Fld>}
       </>}
       <Fld label="Примечание (необяз.)"><Inp value={form.notes} onChange={e=>upd("notes",e.target.value)}/></Fld>
-      {/* Итог перед сохранением */}
       <div style={{padding:"12px 14px",background:"var(--bg)",borderRadius:10,border:"1px solid var(--brd)",fontSize:12}}>
         <div className="ff" style={{fontWeight:600,marginBottom:6,fontSize:13}}>Итог операции</div>
         <div style={{display:"flex",flexDirection:"column",gap:3,color:"var(--tx2)"}}>
@@ -353,12 +352,6 @@ const RTDot=({on})=><div style={{display:"flex",alignItems:"center",gap:5}}>
 /* ══ SIDEBAR ══════════════════════════════════════════════════════════ */
 function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
   const r=profile.role;
-  /* Nav видимость по ролям:
-     home/items/activity  — все
-     branches/recipients  — admin, director, manager
-     reports/suppliers    — admin, director
-     settings/users       — только admin
-  */
   const NAV_MAIN = [
     {id:"home",     l:"Главная",     ico:"⌂"},
     {id:"items",    l:"Товары",      ico:"◻"},
@@ -420,7 +413,7 @@ function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
 
 /* ══ HOME / MENU ══════════════════════════════════════════════════════ */
 function Home({S,stock,checkouts,setView}){
-  const{products,movements,branches,recipients,profile,toast}=S;
+  const{products,movements,branches,recipients,profile,toast,can}=S;
   const[sheet,setSheet]=useState(null);
   const active=products.filter(p=>!p.archived);
   const totalQty=active.reduce((a,p)=>a+(stock[p.id]||0),0);
@@ -428,6 +421,7 @@ function Home({S,stock,checkouts,setView}){
   const overdue=checkouts.filter(c=>c.due_date&&c.due_date<TODAY);
   const soon=checkouts.filter(c=>c.due_date&&c.due_date>TODAY&&c.due_date<=IN3D);
   const lastOut=useMemo(()=>[...movements].filter(m=>m.type==="out"&&m.issuer_id===profile?.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""))[0],[movements,profile]);
+  const lastOutPreFill = lastOut ? {product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz} : {};
   const recent=[...movements].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
   const lowStock=active.filter(p=>(stock[p.id]||0)<5);
   const byBranch=branches.map(b=>{const os=checkouts.filter(c=>c.branch_id===b.id);return{...b,qty:os.reduce((a,c)=>a+c.remaining,0),val:os.reduce((a,c)=>a+(active.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0)}});
@@ -459,7 +453,7 @@ function Home({S,stock,checkouts,setView}){
         <ActionCard ico="📥" type="in"     accent="var(--gr)"  title="Принять товар"  sub="Новая поставка от поставщика"/>
         <ActionCard ico="📤" type="out"    accent="var(--ink)" title={lastOut?"Повторить выдачу":"Выдать товар"}
           sub={lastOut?`→ ${rName(lastOut.recipient_id)} · ${pName(lastOut.product_id)}`:"На мероприятие или акцию"}
-          prefill={lastOut?{product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz}:{}}
+          prefill={lastOutPreFill}
           tag={lastOut?"⟳ Повторить":null}/>
         <ActionCard ico="🔄" type="return" accent="var(--pu)"  title="Принять возврат" sub="Сотрудник вернул товар"/>
       </div>}
@@ -543,10 +537,9 @@ function Home({S,stock,checkouts,setView}){
 
 /* ══ ITEMS VIEW ═══════════════════════════════════════════════════════ */
 function ItemsView({S,stock,checkouts}){
-  const{products,setProducts,categories,suppliers,directions,locations,productTypes,recipients,can,toast,profile}=S;
+  const{products,setProducts,categories,suppliers,directions,locations,productTypes,recipients,can,toast,profile,isRestricted,userBranchId}=S;
   const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
   const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
-  const {isRestricted,userBranchId}=S;
   const visible=products.filter(p=>!p.archived&&(!isRestricted||locations.find(l=>l.id===p.location_id)?.branch_id===userBranchId));
   const filtered=visible.filter(p=>(catF==="all"||p.category_id===catF)&&(!search||p.name?.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())));
   const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:""});
@@ -1123,30 +1116,22 @@ function App(){
 
   const stock=useStock(data.movements);const checkouts=useCheckouts(data.movements);
   const overdue=useMemo(()=>checkouts.filter(c=>c.due_date&&c.due_date<TODAY),[checkouts]);
-  /*
-   * Матрица прав:
-   *   admin    — всё, все филиалы
-   *   director — просмотр всего (все филиалы), без операций и редактирования
-   *   manager  — операции (Приход/Выдача/Возврат), добавление товаров, только свой филиал
-   *   employee — только просмотр, только свой филиал
-   */
   const can=useCallback(a=>{
     if(!profile)return false;
     const r=profile.role;
     switch(a){
       case "admin":     return r==="admin";
-      case "settings":  return r==="admin";                          // справочники + пользователи
-      case "reports":   return r==="admin"||r==="director";          // отчёты
-      case "suppliers": return r==="admin"||r==="director";          // поставщики
-      case "edit":      return r==="admin"||r==="manager";           // добавление товаров
-      case "move":      return r==="admin"||r==="manager";           // операции (выдача/приход/возврат)
-      case "branches":  return r==="admin"||r==="director"||r==="manager"; // раздел филиалов
+      case "settings":  return r==="admin";
+      case "reports":   return r==="admin"||r==="director";
+      case "suppliers": return r==="admin"||r==="director";
+      case "edit":      return r==="admin"||r==="manager";
+      case "move":      return r==="admin"||r==="manager";
+      case "branches":  return r==="admin"||r==="director"||r==="manager";
       case "recipients":return r==="admin"||r==="director"||r==="manager";
-      default:          return true;                                  // просмотр — все
+      default:          return true;
     }
   },[profile]);
 
-  // Ограничение по филиалу: manager и employee видят только свои данные
   const isRestricted = profile && (profile.role==="manager"||profile.role==="employee");
   const userBranchId = profile?.branch_id;
 
@@ -1156,14 +1141,6 @@ function App(){
   if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}><Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span></div>;
   if(!profile)return<><Login onLogin={p=>{setProfile(p);toast("Добро пожаловать!")}}/><Toasts ts={ts}/></>;
 
-  const NAV=[
-    {id:"home",l:"Главная"},{id:"items",l:"Товары"},{id:"activity",l:"Движения",badge:overdue.length},
-    {id:"branches",l:"Филиалы"},{id:"recipients",l:"Получатели"},
-    ...(can("admin")||can("director")?[{id:"reports",l:"Отчёты"},{id:"suppliers",l:"Поставщики"},{id:"settings",l:"Справочники"},{id:"users",l:"Пользователи"}]:[])
-  ];
-  // sidebar uses groups internally
-
-  // Защита роутов: если view недоступен для роли — сбрасываем на home
   const r=profile.role;
   const ALLOWED_VIEWS={
     admin:    ["home","items","activity","branches","recipients","reports","suppliers","settings","users"],
