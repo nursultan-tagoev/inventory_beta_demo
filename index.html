@@ -1,1102 +1,1145 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>МКТ·СКЛАД — v2.2</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; }
-    button { cursor:pointer; }
-    input, select { outline:none; }
-    table { border-collapse:collapse; }
-    ::-webkit-scrollbar { width:10px; height:10px; }
-    ::-webkit-scrollbar-track { background:transparent; }
-    ::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:6px; }
-    ::-webkit-scrollbar-thumb:hover { background:#9ca3af; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Учёт и Склад</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --f:'Inter',-apple-system,sans-serif;
+  --ff:'Fraunces',Georgia,serif;
+  --bg:#F7F6F3;--sur:#fff;--brd:#E5E2DA;--brd2:#CCC9C0;
+  --tx:#1A1814;--tx2:#58554D;--tx3:#9C998F;
+  --ink:#4F4CEC;--ink-h:#3D3AC5;--ink-l:#EEEEFF;--ink-xl:#E0E7FF;
+  --gr:#16A34A;--gr-l:#F0FDF4;--gr-m:#15803D;
+  --rd:#DC2626;--rd-l:#FEF2F2;--rd-m:#B91C1C;
+  --am:#D97706;--am-l:#FFFBEB;--am-m:#B45309;
+  --pu:#7C3AED;--pu-l:#F5F3FF;
+  --nav:#1A1814;--nav2:#2A2720;--nav3:#3A3730;--navm:#7A776D;
+  --sh:0 1px 3px rgba(26,24,20,.06),0 1px 2px rgba(26,24,20,.04);
+  --sh2:0 4px 16px rgba(26,24,20,.08);
+  --sh3:0 20px 48px rgba(26,24,20,.14);
+  --r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;font-size:14px}
+body{font-family:var(--f);background:var(--bg);color:var(--tx);height:100vh;overflow:hidden;line-height:1.5}
+.ff{font-family:var(--ff)}
+button,input,select{font-family:var(--f)}
+button{cursor:pointer;border:none;background:none}
+input,select{outline:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:4px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.fade-up{animation:fadeUp .2s ease}
+.slide-up{animation:slideUp .28s cubic-bezier(.32,.72,0,1)}
+.card{background:var(--sur);border:1px solid var(--brd);border-radius:var(--r);box-shadow:var(--sh);transition:all .2s ease}
+.card-hov:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:var(--ink)}
+</style>
 </head>
-<body>
-  <div id="root"></div>
+<body><div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo,useEffect,useCallback,useRef} = React;
 
-  <script type="text/babel">
-    const { useState, useMemo, useEffect } = React;
+/* ══ SUPABASE ══════════════════════════════════════════════════════════ */
+const SB_URL  = "https://ffcbzsdpfgjrmljmxeni.supabase.co";
+const SB_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmY2J6c2RwZmdqcm1sam14ZW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NzgzNjcsImV4cCI6MjA5MzM1NDM2N30.O7oscWiD3Moza62nTFRIdQhcCvT3SH522yLoQB7Ayyw";
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-    // ====== КОНСТАНТЫ И НАЧАЛЬНЫЕ ДАННЫЕ ======
-    const DEFAULT_CATEGORIES = [
-      {id:"Одежда",name:"Одежда",color:"#f97316",icon:"👕"},
-      {id:"Канцелярия",name:"Канцелярия",color:"#3b82f6",icon:"✏️"},
-      {id:"Электроника",name:"Электроника",color:"#8b5cf6",icon:"⚡"},
-      {id:"Аксессуары",name:"Аксессуары",color:"#ec4899",icon:"🎒"},
-      {id:"Полиграфия",name:"Полиграфия",color:"#10b981",icon:"📄"},
-      {id:"Прочее",name:"Прочее",color:"#64748b",icon:"📦"}
-    ];
-    const DEFAULT_PRODUCT_TYPES = [
-      {id:"t1",name:"Футболка"},{id:"t2",name:"Бейсболка"},{id:"t3",name:"Ручка"},
-      {id:"t4",name:"Блокнот"},{id:"t5",name:"Пауэрбанк"},{id:"t6",name:"Шопер"},{id:"t7",name:"Стикерпак"}
-    ];
-    const INIT_BRANCHES = [
-      {id:1,name:"Филиал 1",city:"Бишкек",head:"Руководитель 1"},
-      {id:2,name:"Филиал 2",city:"Ош",head:"Руководитель 2"},
-      {id:3,name:"Филиал 3",city:"Джалал-Абад",head:"Руководитель 3"},
-      {id:4,name:"Филиал 4",city:"Каракол",head:"Руководитель 4"}
-    ];
-    const INIT_LOCATIONS = [
-      {id:4,name:"A1·П1",branchId:1},{id:5,name:"A1·П2",branchId:1},
-      {id:6,name:"A2·П1",branchId:2},{id:7,name:"B1·П1",branchId:3},{id:8,name:"B2·П1",branchId:4}
-    ];
-    const INIT_SUPPLIERS = [
-      {id:1,name:"Поставщик 1",contact:"+996 555 123456",inn:"12345678901234"},
-      {id:2,name:"Поставщик 2",contact:"+996 777 654321",inn:"98765432109876"}
-    ];
-    const INIT_DIRECTIONS = [{id:1,name:"Бизнес"},{id:2,name:"Розница"},{id:3,name:"ИФЦ"}];
-    const ROLES = {admin:"Администратор",manager:"Кладовщик",employee:"Сотрудник",director:"Руководитель"};
-    const T_LABEL = {in:"Приход",out:"Выдача",return:"Возврат",writeoff:"Списание"};
-    const T_COLOR = {in:"#16a34a",out:"#2563eb",return:"#7c3aed",writeoff:"#dc2626"};
-    const T_BG    = {in:"#f0fdf4",out:"#eff6ff",return:"#faf5ff",writeoff:"#fef2f2"};
-    const TODAY = new Date().toISOString().split("T")[0];
-    const da = n => {const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().split("T")[0];};
-    const df = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split("T")[0];};
-    const som = n => `${new Intl.NumberFormat("ru-RU").format(Math.round(n))} с`;
+/* ══ CONSTANTS ════════════════════════════════════════════════════════ */
+const TODAY = new Date().toISOString().split("T")[0];
+const IN3D  = new Date(Date.now()+3*86400000).toISOString().split("T")[0];
+const ROLES = {admin:"Администратор",manager:"Маркетолог",employee:"Сотрудник",director:"Руководитель"};
+const TL = {in:"Приход",out:"Выдача",return:"Возврат",writeoff:"Списание"};
+const TC = {in:"#16A34A",out:"#4F4CEC",return:"#7C3AED",writeoff:"#DC2626"};
+const TB = {in:"#F0FDF4",out:"#EEEEFF",return:"#F5F3FF",writeoff:"#FEF2F2"};
+const som = n => `${new Intl.NumberFormat("ru-RU").format(Math.round(n||0))} с`;
 
-    const INIT_PRODUCTS = [
-      {id:1,name:"Футболка белая L",sku:"TSH-001",categoryId:"Одежда",price:850,locationId:4,directionId:2,supplierId:1,productTypeId:"t1",archived:false},
-      {id:2,name:"Ручка с логотипом",sku:"PEN-001",categoryId:"Канцелярия",price:120,locationId:5,directionId:1,supplierId:2,productTypeId:"t3",archived:false},
-      {id:3,name:"Блокнот А5",sku:"NTB-001",categoryId:"Канцелярия",price:180,locationId:5,directionId:1,supplierId:1,productTypeId:"t4",archived:false},
-      {id:4,name:"Пауэрбанк 10000 mAh",sku:"PWR-001",categoryId:"Электроника",price:3200,locationId:6,directionId:3,supplierId:2,productTypeId:"t5",archived:false},
-      {id:5,name:"Бейсболка",sku:"CAP-001",categoryId:"Одежда",price:650,locationId:4,directionId:2,supplierId:1,productTypeId:"t2",archived:false},
-      {id:6,name:"Шопер",sku:"BAG-001",categoryId:"Аксессуары",price:420,locationId:7,directionId:1,supplierId:2,productTypeId:"t6",archived:false},
-      {id:7,name:"Стикерпак",sku:"STK-001",categoryId:"Полиграфия",price:45,locationId:8,directionId:3,supplierId:1,productTypeId:"t7",archived:false},
-    ];
-    const INIT_MOVEMENTS = [
-      {id:1,type:"in",productId:1,qty:100,locationId:4,issuerId:1,date:da(30),notes:"Начальный приход",supplierId:1,szDocumentNumber:""},
-      {id:2,type:"in",productId:2,qty:200,locationId:5,issuerId:1,date:da(28),notes:"",supplierId:2,szDocumentNumber:""},
-      {id:3,type:"in",productId:3,qty:150,locationId:5,issuerId:1,date:da(25),notes:"",supplierId:1,szDocumentNumber:""},
-      {id:4,type:"in",productId:4,qty:20,locationId:6,issuerId:1,date:da(20),notes:"",supplierId:2,szDocumentNumber:""},
-      {id:5,type:"in",productId:5,qty:50,locationId:4,issuerId:1,date:da(15),notes:"",supplierId:1,szDocumentNumber:""},
-      {id:6,type:"in",productId:6,qty:80,locationId:7,issuerId:1,date:da(15),notes:"",supplierId:2,szDocumentNumber:""},
-      {id:7,type:"in",productId:7,qty:300,locationId:8,issuerId:1,date:da(10),notes:"",supplierId:1,szDocumentNumber:""},
-      {id:8,type:"out",productId:1,qty:10,locationId:4,issuerId:1,recipientId:1,branchId:1,date:da(14),purpose:"Мероприятие",dueDate:da(7),szDocumentNumber:"СЗ-001"},
-      {id:9,type:"out",productId:2,qty:50,locationId:5,issuerId:1,recipientId:2,branchId:2,date:da(10),purpose:"Выставка",dueDate:da(3),szDocumentNumber:"СЗ-002"},
-      {id:10,type:"out",productId:3,qty:20,locationId:5,issuerId:1,recipientId:3,branchId:3,date:da(5),purpose:"Партнёры",dueDate:df(10),szDocumentNumber:"СЗ-003"},
-      {id:11,type:"out",productId:5,qty:5,locationId:4,issuerId:1,recipientId:4,branchId:4,date:da(8),purpose:"Конференция",dueDate:da(5),szDocumentNumber:"СЗ-004"},
-      {id:12,type:"out",productId:7,qty:100,locationId:8,issuerId:1,recipientId:2,branchId:2,date:da(12),purpose:"Онбординг",dueDate:df(5),szDocumentNumber:"СЗ-005"},
-      {id:13,type:"return",productId:2,qty:20,locationId:5,issuerId:1,recipientId:2,branchId:2,date:da(2),condition:"хорошее",notes:""},
-      {id:14,type:"writeoff",productId:1,qty:2,locationId:4,issuerId:1,date:da(5),notes:"Брак"},
-    ];
-    const INIT_RECIPIENTS = [
-      {id:1,name:"Тест 1",branchId:1,szId:"СЗ-001",branchHead:"Руководитель 1"},
-      {id:2,name:"Тест 2",branchId:2,szId:"СЗ-002",branchHead:"Руководитель 2"},
-      {id:3,name:"Тест 3",branchId:3,szId:"СЗ-003",branchHead:"Руководитель 3"},
-      {id:4,name:"Тест 4",branchId:4,szId:"СЗ-004",branchHead:"Руководитель 4"},
-    ];
-    const INIT_USERS = [
-      {id:1,name:"admin",role:"admin",branchId:1,password:"admin"},
-      {id:2,name:"manager1",role:"manager",branchId:1,password:"manager1"},
-      {id:3,name:"employee1",role:"employee",branchId:1,password:"employee1"},
-      {id:4,name:"director1",role:"director",branchId:2,password:"director1"},
-      {id:5,name:"manager2",role:"manager",branchId:2,password:"manager2"},
-      {id:6,name:"employee2",role:"employee",branchId:3,password:"employee2"},
-    ];
+/* ══ HOOKS ════════════════════════════════════════════════════════════ */
+function useStock(mv){
+  return useMemo(()=>{const s={};mv.forEach(m=>{if(!s[m.product_id])s[m.product_id]=0;if(m.type==="in"||m.type==="return")s[m.product_id]+=m.qty;else if(m.type==="out"||m.type==="writeoff")s[m.product_id]-=m.qty});return s},[mv]);
+}
+function useCheckouts(mv){
+  return useMemo(()=>{
+    const map={};mv.forEach(m=>{if(m.type==="out")map[m.id]={...m,remaining:m.qty}});
+    mv.forEach(m=>{if(m.type==="return"){let l=m.qty;Object.values(map).filter(o=>o.product_id===m.product_id&&o.recipient_id===m.recipient_id&&o.remaining>0).sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(o=>{if(l>0){const t=Math.min(l,o.remaining);o.remaining-=t;l-=t}})}});
+    return Object.values(map).filter(o=>o.remaining>0);
+  },[mv]);
+}
+function useToast(){
+  const[ts,set]=useState([]);
+  const toast=useCallback((msg,type="ok")=>{const id=Date.now()+Math.random();set(p=>[...p,{id,msg,type}]);setTimeout(()=>set(p=>p.filter(t=>t.id!==id)),3000)},[]);
+  return{ts,toast};
+}
 
-    // ====== СТИЛИ И ИКОНКИ ======
-    const LBL = {fontSize:11,color:"#9ca3af",display:"block",marginBottom:4,fontWeight:500};
-    const INP = {width:"100%",padding:"8px 10px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:12,background:"white",color:"#1f2937",boxSizing:"border-box",outline:"none"};
+/* ══ PRIMITIVES ═══════════════════════════════════════════════════════ */
+const Spin=({s=16})=><span style={{display:"inline-block",width:s,height:s,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>;
 
-    function IcoBox(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>}
-    function IcoActivity(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
-    function IcoBranch(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>}
-    function IcoUsers(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>}
-    function IcoSettings(){return <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>}
+function Btn({children,onClick,v="primary",size="md",loading,disabled,icon,style:sx={}}){
+  const[h,sh]=useState(false);
+  const P={sm:"5px 12px",md:"7px 18px",lg:"11px 24px"}[size];
+  const FS={sm:11,md:13,lg:14}[size];
+  const V={
+    primary:{bg:h&&!disabled?"var(--ink-h)":"var(--ink)",c:"white",b:"var(--ink)"},
+    secondary:{bg:h&&!disabled?"var(--bg)":"var(--sur)",c:"var(--tx)",b:"var(--brd2)"},
+    ghost:{bg:h&&!disabled?"var(--bg)":"transparent",c:"var(--tx2)",b:"transparent"},
+    danger:{bg:h&&!disabled?"var(--rd-m)":"var(--rd)",c:"white",b:"var(--rd)"},
+    success:{bg:h&&!disabled?"var(--gr-m)":"var(--gr)",c:"white",b:"var(--gr)"},
+    warn:{bg:h&&!disabled?"var(--am-m)":"var(--am)",c:"white",b:"var(--am)"},
+  }[v]||{bg:"var(--ink)",c:"white",b:"var(--ink)"};
+  return <button onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)} onClick={!disabled&&!loading?onClick:undefined}
+    style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,padding:P,fontSize:FS,fontWeight:600,borderRadius:9,border:`1px solid ${V.b}`,background:V.bg,color:V.c,cursor:disabled||loading?"not-allowed":"pointer",opacity:disabled||loading?.55:1,whiteSpace:"nowrap",transition:"all .15s",...sx}}>
+    {loading?<Spin s={14}/>:icon&&<span style={{fontSize:14}}>{icon}</span>}{children}
+  </button>
+}
+const Lbl=({c})=><span style={{display:"block",fontSize:11,fontWeight:600,color:"var(--tx2)",marginBottom:5,letterSpacing:".04em",textTransform:"uppercase"}}>{c}</span>;
+const Fld=({label,children,full})=><div style={full?{gridColumn:"1/-1"}:{}}><Lbl c={label}/>{children}</div>;
+function Inp({value,onChange,placeholder,type="text",style:sx={},onKeyDown,autoFocus,pfx,disabled}){
+  const[f,sf]=useState(false);
+  return <div style={{position:"relative",display:"flex",alignItems:"center"}}>
+    {pfx&&<span style={{position:"absolute",left:10,color:"var(--tx3)",display:"flex",alignItems:"center",pointerEvents:"none"}}>{pfx}</span>}
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder} autoFocus={autoFocus} disabled={disabled}
+      onFocus={()=>sf(true)} onBlur={()=>sf(false)} onKeyDown={onKeyDown}
+      style={{width:"100%",padding:pfx?"8px 12px 8px 32px":"8px 12px",fontSize:13,border:`1px solid ${f?"var(--ink)":"var(--brd)"}`,borderRadius:9,background:disabled?"var(--bg)":"var(--sur)",color:"var(--tx)",boxShadow:f?"0 0 0 3px var(--ink-l)":"none",transition:"all .15s",...sx}}/>
+  </div>
+}
+function Sel({value,onChange,children,style:sx={}}){
+  const[f,sf]=useState(false);
+  return <select value={value} onChange={onChange} onFocus={()=>sf(true)} onBlur={()=>sf(false)}
+    style={{width:"100%",padding:"8px 12px",fontSize:13,border:`1px solid ${f?"var(--ink)":"var(--brd)"}`,borderRadius:9,background:"var(--sur)",color:"var(--tx)",boxShadow:f?"0 0 0 3px var(--ink-l)":"none",transition:"all .15s",...sx}}>
+    {children}
+  </select>
+}
+function Badge({children,color="slate",size="sm"}){
+  const m={ink:["var(--ink-l)","var(--ink)"],green:["var(--gr-l)","var(--gr-m)"],red:["var(--rd-l)","var(--rd-m)"],amber:["var(--am-l)","var(--am-m)"],purple:["var(--pu-l)","var(--pu)"],slate:["var(--bg)","var(--tx2)"]};
+  const[bg,fg]=m[color]||m.slate;
+  return <span style={{display:"inline-flex",alignItems:"center",padding:size==="xs"?"1px 6px":"2px 9px",borderRadius:999,fontSize:size==="xs"?10:11,fontWeight:600,background:bg,color:fg,whiteSpace:"nowrap"}}>{children}</span>
+}
+const TBadge=({type})=>{const m={in:["green","Приход"],out:["ink","Выдача"],return:["purple","Возврат"],writeoff:["red","Списание"]};const[c,l]=m[type]||["slate","?"];return<Badge color={c}>{l}</Badge>};
 
-    function StatChip({label,value,color}){
-      return <div style={{background:`${color}15`,borderRadius:8,padding:"5px 12px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-        <div style={{fontSize:13,fontWeight:700,color}}>{value}</div>
-        <div style={{fontSize:9,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5}}>{label}</div>
-      </div>;
-    }
-    function catBtn(active,color){
-      return {padding:"5px 12px",borderRadius:20,border:`1px solid ${active?color:"#e5e7eb"}`,fontSize:11,cursor:"pointer",background:active?color+"20":"white",color:active?color:"#6b7280",fontWeight:active?600:400};
-    }
+/* ══ TOASTS ═══════════════════════════════════════════════════════════ */
+function Toasts({ts}){return<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
+  {ts.map(t=><div key={t.id} className="fade-up" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderRadius:12,fontSize:13,fontWeight:500,boxShadow:"var(--sh3)",background:t.type==="error"?"var(--rd)":t.type==="warn"?"var(--am-m)":"var(--nav)",color:"white",whiteSpace:"nowrap"}}>
+    {t.type==="error"?"✗":t.type==="warn"?"⚠":"✓"} {t.msg}
+  </div>)}
+</div>}
 
-    // ====== ЭКРАН ВХОДА ======
-    function LoginScreen({users,setCurrentUser,showToast}){
-      const [login,setLogin]=useState("");
-      const [password,setPassword]=useState("");
-      const [error,setError]=useState("");
-      const handleLogin = ()=>{
-        const u=users.find(u=>u.name===login&&u.password===password);
-        if(u){setCurrentUser(u);setError("");showToast("Добро пожаловать, "+u.name);}
-        else setError("Неверный логин или пароль");
-      };
-      const onKey = e => { if(e.key==="Enter") handleLogin(); };
-      return (
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#1a1d2e"}}>
-          <div style={{background:"white",borderRadius:16,padding:40,width:360,textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:8}}>📦</div>
-            <div style={{fontSize:22,fontWeight:700,marginBottom:4,color:"#1f2937"}}>МКТ·СКЛАД</div>
-            <div style={{fontSize:13,color:"#6b7280",marginBottom:24}}>Система складского учёта</div>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <input type="text" value={login} onChange={e=>setLogin(e.target.value)} onKeyDown={onKey} placeholder="Логин" style={{...INP,padding:"12px",fontSize:14}}/>
-              <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={onKey} placeholder="Пароль" style={{...INP,padding:"12px",fontSize:14}}/>
-              {error && <div style={{color:"#dc2626",fontSize:13}}>{error}</div>}
-              <button onClick={handleLogin} style={{background:"#6366f1",color:"white",border:"none",padding:"12px",borderRadius:10,fontSize:16,fontWeight:600}}>Войти</button>
+/* ══ CONFIRM DIALOG ═══════════════════════════════════════════════════ */
+function Confirm({title,message,onOk,onCancel,danger=true}){
+  return <div style={{position:"fixed",inset:0,zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onCancel}>
+    <div style={{position:"absolute",inset:0,background:"rgba(26,24,20,.5)",backdropFilter:"blur(4px)"}}/>
+    <div className="scale-in" onClick={e=>e.stopPropagation()} style={{position:"relative",background:"var(--sur)",borderRadius:16,width:"100%",maxWidth:380,padding:"24px 28px",boxShadow:"var(--sh3)"}}>
+      <div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{title}</div>
+      <p style={{fontSize:13,color:"var(--tx2)",lineHeight:1.6,marginBottom:20}}>{message}</p>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <Btn v="secondary" onClick={onCancel}>Отмена</Btn>
+        <Btn v={danger?"danger":"primary"} onClick={onOk}>Подтвердить</Btn>
+      </div>
+    </div>
+  </div>
+}
+
+/* ══ BOTTOM SHEET ═════════════════════════════════════════════════════ */
+function Sheet({open,onClose,title,children,dirty}){
+  const handleClose=()=>{
+    if(dirty&&!window.confirm("Есть незаполненные данные. Закрыть без сохранения?"))return;
+    onClose();
+  };
+  if(!open)return null;
+  return<div style={{position:"fixed",inset:0,zIndex:900,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={handleClose}>
+    <div className="fade-in" style={{position:"absolute",inset:0,background:"rgba(26,24,20,.4)",backdropFilter:"blur(4px)"}}/>
+    <div className="slide-up" onClick={e=>e.stopPropagation()} style={{position:"relative",background:"var(--sur)",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:600,maxHeight:"88vh",overflow:"auto",boxShadow:"var(--sh3)",border:"1px solid var(--brd)",borderBottom:"none",zIndex:1}}>
+      <div style={{display:"flex",justifyContent:"center",padding:"14px 0 0"}}><div style={{width:44,height:5,borderRadius:3,background:"var(--brd2)"}}/></div>
+      {title&&<div className="ff" style={{padding:"12px 26px 0",fontWeight:700,fontSize:20,color:"var(--tx)"}}>{title}</div>}
+      <div style={{padding:"14px 26px 32px"}}>{children}</div>
+    </div>
+  </div>
+}
+
+/* ══ VOICE BUTTON ═════════════════════════════════════════════════════ */
+function VoiceBtn({onResult,context}){
+  const[on,setOn]=useState(false);const[ok,setOk]=useState(true);const ref=useRef(null);
+  const hints={in:"Пример: 100 футболок от Поставщика 1",out:"Пример: выдай Айгерим 5 ручек на конференцию",return:"Пример: возврат от Бакыта 3 блокнота"};
+  useEffect(()=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setOk(false);return}
+    const r=new SR();r.lang="ru-RU";r.interimResults=false;r.maxAlternatives=1;
+    r.onresult=e=>{onResult(e.results[0][0].transcript);setOn(false)};
+    r.onerror=()=>setOn(false);r.onend=()=>setOn(false);ref.current=r;
+  },[onResult]);
+  if(!ok)return<span style={{fontSize:11,color:"var(--tx3)"}}>Голос доступен только в Chrome</span>;
+  return<div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+    <button onClick={()=>{on?ref.current.stop():ref.current.start();setOn(p=>!p)}} style={{display:"flex",alignItems:"center",gap:7,padding:"6px 14px",borderRadius:20,border:`1px solid ${on?"var(--rd)":"var(--brd)"}`,background:on?"var(--rd-l)":"var(--bg)",fontSize:12,fontWeight:600,color:on?"var(--rd)":"var(--tx2)",cursor:"pointer",transition:"all .15s"}}>
+      <span style={{animation:on?"blink 1s infinite":"none"}}>{on?"🔴":"🎤"}</span>{on?"Слушаю...":"Голос"}
+    </button>
+    <span style={{fontSize:11,color:"var(--tx3)"}}>{hints[context]||""}</span>
+  </div>
+}
+
+/* ══ WIZARD STEPS ═════════════════════════════════════════════════════ */
+function WizardSteps({current,total}){
+  return<div style={{display:"flex",gap:6,alignItems:"center",marginBottom:20}}>
+    {Array.from({length:total}).map((_,i)=><React.Fragment key={i}>
+      <div style={{width:26,height:26,borderRadius:"50%",background:i+1===current?"var(--ink)":i+1<current?"var(--gr)":"var(--brd)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:i+1<=current?"white":"var(--tx3)",transition:"all .2s",flexShrink:0}}>
+        {i+1<current?"✓":i+1}
+      </div>
+      {i<total-1&&<div style={{flex:1,height:2,background:i+1<current?"var(--gr)":"var(--brd)",borderRadius:1,transition:"background .2s"}}/>}
+    </React.Fragment>)}
+  </div>
+}
+
+/* ══ WIZARD OP FORM ═══════════════════════════════════════════════════ */
+function OpForm({type,prefill={},onSave,onCancel,S}){
+  const{products,recipients,suppliers,directions,branches,profile,toast}=S;
+  const t=type;
+  const totalSteps=t==="in"?2:3;
+  const[step,setStep]=useState(1);
+  const[dirty,setDirty]=useState(false);
+  const[loading,setL]=useState(false);
+  const[confirm,setConfirm]=useState(false);
+  const[form,setForm]=useState({
+    product_id:prefill.product_id||"",qty:prefill.qty||1,
+    recipient_id:prefill.recipient_id||"",branch_id:prefill.branch_id||"",
+    purpose:prefill.purpose||"",due_date:"",sz:prefill.sz||"",
+    supplier_id:suppliers[0]?.id||"",direction_id:"",condition:"хорошее",notes:""
+  });
+  const upd=(key,val)=>{setForm(f=>({...f,[key]:val}));setDirty(true)};
+  const selProd=useMemo(()=>products.find(p=>p.id==form.product_id),[form.product_id,products]);
+  const selRec=useMemo(()=>recipients.find(r=>r.id==form.recipient_id),[form.recipient_id,recipients]);
+  useEffect(()=>{if(selProd&&t==="in")setForm(f=>({...f,supplier_id:selProd.supplier_id||f.supplier_id,direction_id:selProd.direction_id||f.direction_id}))},[selProd,t]);
+  useEffect(()=>{if(selRec)setForm(f=>({...f,branch_id:selRec.branch_id||f.branch_id}))},[selRec]);
+
+  const handleVoice=useCallback(text=>{
+    const low=text.toLowerCase();
+    const prod=products.find(p=>(p.name||"").toLowerCase().split(" ").some(w=>w.length>3&&low.includes(w)));
+    const rec=recipients.find(r=>(r.name||"").toLowerCase().split(" ").some(w=>w.length>2&&low.includes(w)));
+    const bra=branches.find(b=>(b.name||"").toLowerCase().split(" ").some(w=>w.length>2&&low.includes(w)));
+    const qm=low.match(/(\d+)/);
+    setForm(f=>({...f,...(prod?{product_id:prod.id}:{}),...(rec?{recipient_id:rec.id}:{}),...(bra?{branch_id:bra.id}:{}),...(qm?{qty:parseInt(qm[0])}:{})}));
+    setDirty(true);
+  },[products,recipients,branches]);
+
+  const doSave=async()=>{
+    if(!form.product_id){toast("Выберите товар","error");return}
+    setL(true);
+    const{error}=await sb.from("movements").insert({
+      type:t,product_id:Number(form.product_id),qty:Number(form.qty),
+      location_id:selProd?.location_id||null,issuer_id:profile.id,
+      recipient_id:Number(form.recipient_id)||null,
+      branch_id:Number(form.branch_id)||selRec?.branch_id||null,
+      supplier_id:t==="in"?Number(form.supplier_id)||null:null,
+      purpose:t==="out"?form.purpose||null:null,
+      due_date:t==="out"?form.due_date||null:null,
+      sz:t==="out"?form.sz||null:null,
+      direction_id:form.direction_id?Number(form.direction_id):null,
+      condition:t==="return"?form.condition:null,
+      notes:form.notes||null,date:TODAY
+    });
+    setL(false);
+    if(error){toast("Ошибка: "+error.message,"error");return}
+    onSave();
+  };
+
+  const needsConfirm=t==="writeoff"||(t==="return"&&step===totalSteps);
+  const handleNext=()=>step<totalSteps?setStep(s=>s+1):needsConfirm?setConfirm(true):doSave();
+  const ico={in:"📥",out:"📤",return:"🔄",writeoff:"🗑️"};
+
+  return<div>
+    {confirm&&<Confirm title={`Подтвердить ${TL[t]}?`} message={`${TL[t]} ${form.qty} шт. товара "${selProd?.name||"—"}"${selRec?` от ${selRec.name}`:""}`} onOk={()=>{setConfirm(false);doSave()}} onCancel={()=>setConfirm(false)}/>}
+    <WizardSteps current={step} total={totalSteps}/>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:24}}>{ico[t]}</span>
+        <span className="ff" style={{fontWeight:700,fontSize:18,color:TC[t]}}>{TL[t]}</span>
+        {step>1&&<span style={{fontSize:12,color:"var(--tx3)"}}>Шаг {step} из {totalSteps}</span>}
+      </div>
+      <VoiceBtn onResult={handleVoice} context={t}/>
+    </div>
+
+    {step===1&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <Fld label="Товар"><Sel value={form.product_id} onChange={e=>upd("product_id",e.target.value)}>
+        <option value="">— выбрать товар —</option>
+        {products.filter(p=>!p.archived).map(p=><option key={p.id} value={p.id}>{p.name}{p.sku?` (${p.sku})`:""}</option>)}
+      </Sel></Fld>
+      {selProd&&<div style={{display:"flex",gap:10,padding:"10px 14px",background:"var(--ink-l)",borderRadius:9,fontSize:12,color:"var(--ink)",alignItems:"center"}}>
+        <span className="ff" style={{fontWeight:700,fontSize:16}}>{S.stock[selProd.id]||0} шт</span>
+        <span>на складе · {som(selProd.price)} за шт.</span>
+      </div>}
+      <Fld label="Количество"><Inp type="number" value={form.qty} onChange={e=>upd("qty",e.target.value)}/></Fld>
+      {t==="in"&&suppliers.length>0&&<Fld label="Поставщик"><Sel value={form.supplier_id} onChange={e=>upd("supplier_id",e.target.value)}>
+        {suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+      </Sel></Fld>}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        {onCancel&&<Btn v="secondary" onClick={onCancel}>Отмена</Btn>}
+        <Btn onClick={handleNext} style={{flex:1}} disabled={!form.product_id}>{t==="in"&&totalSteps===2?"Далее →":"Далее →"}</Btn>
+      </div>
+    </div>}
+
+    {step===2&&(t==="out"||t==="return")&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <Fld label={t==="out"?"Получатель":"Возврат от"}><Sel value={form.recipient_id} onChange={e=>upd("recipient_id",e.target.value)}>
+        <option value="">— выбрать —</option>
+        {recipients.map(r=><option key={r.id} value={r.id}>{r.name} ({branches.find(b=>b.id===r.branch_id)?.name||"—"})</option>)}
+      </Sel></Fld>
+      <Fld label="Или выбрать филиал напрямую"><Sel value={form.branch_id} onChange={e=>upd("branch_id",e.target.value)}>
+        <option value="">— выбрать —</option>
+        {branches.map(b=><option key={b.id} value={b.id}>{b.name} ({b.city})</option>)}
+      </Sel></Fld>
+      {t==="return"&&<Fld label="Состояние товара"><Sel value={form.condition} onChange={e=>upd("condition",e.target.value)}>
+        <option value="хорошее">✅ Хорошее</option><option value="б/у">⚠ Б/у</option><option value="брак">❌ Брак</option>
+      </Sel></Fld>}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <Btn v="secondary" onClick={()=>setStep(1)}>← Назад</Btn>
+        <Btn onClick={handleNext} style={{flex:1}}>Далее →</Btn>
+      </div>
+    </div>}
+
+    {step===2&&t==="in"&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {directions.length>0&&<Fld label="Направление"><Sel value={form.direction_id} onChange={e=>upd("direction_id",e.target.value)}>
+        <option value="">— не выбрано —</option>
+        {directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+      </Sel></Fld>}
+      <Fld label="Примечание (необяз.)"><Inp value={form.notes} onChange={e=>upd("notes",e.target.value)} placeholder="Комментарий"/></Fld>
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <Btn v="secondary" onClick={()=>setStep(1)}>← Назад</Btn>
+        <Btn onClick={doSave} loading={loading} style={{flex:1}}>Сохранить</Btn>
+      </div>
+    </div>}
+
+    {step===3&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+      {t==="out"&&<>
+        <Fld label="Цель / мероприятие"><Inp value={form.purpose} onChange={e=>upd("purpose",e.target.value)} placeholder="Конференция, выставка..."/></Fld>
+        <Fld label="Вернуть до"><Inp type="date" value={form.due_date} onChange={e=>upd("due_date",e.target.value)}/></Fld>
+        <Fld label="Номер СЗ"><Inp value={form.sz} onChange={e=>upd("sz",e.target.value)} placeholder="СЗ-001"/></Fld>
+        {directions.length>0&&<Fld label="Направление"><Sel value={form.direction_id} onChange={e=>upd("direction_id",e.target.value)}>
+          <option value="">— не выбрано —</option>
+          {directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}
+        </Sel></Fld>}
+      </>}
+      <Fld label="Примечание (необяз.)"><Inp value={form.notes} onChange={e=>upd("notes",e.target.value)}/></Fld>
+      {/* Итог перед сохранением */}
+      <div style={{padding:"12px 14px",background:"var(--bg)",borderRadius:10,border:"1px solid var(--brd)",fontSize:12}}>
+        <div className="ff" style={{fontWeight:600,marginBottom:6,fontSize:13}}>Итог операции</div>
+        <div style={{display:"flex",flexDirection:"column",gap:3,color:"var(--tx2)"}}>
+          <div>Товар: <b style={{color:"var(--tx)"}}>{selProd?.name||"—"}</b> × {form.qty} шт</div>
+          {selRec&&<div>Получатель: <b style={{color:"var(--tx)"}}>{selRec.name}</b></div>}
+          {form.purpose&&<div>Цель: {form.purpose}</div>}
+          {form.due_date&&<div>Вернуть до: {form.due_date}</div>}
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <Btn v="secondary" onClick={()=>setStep(2)}>← Назад</Btn>
+        <Btn onClick={handleNext} loading={loading} style={{flex:1}}>Сохранить операцию</Btn>
+      </div>
+    </div>}
+  </div>
+}
+
+/* ══ RT INDICATOR ═════════════════════════════════════════════════════ */
+const RTDot=({on})=><div style={{display:"flex",alignItems:"center",gap:5}}>
+  <span style={{width:7,height:7,borderRadius:"50%",background:on?"var(--gr)":"var(--navm)",boxShadow:on?"0 0 0 3px var(--gr-l)":"none"}}/>
+  <span style={{fontSize:11,color:on?"var(--gr)":"var(--navm)",fontWeight:500}}>{on?"Live":"—"}</span>
+</div>;
+
+/* ══ SIDEBAR ══════════════════════════════════════════════════════════ */
+function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
+  const r=profile.role;
+  const groups=[
+    {items:[
+      {id:"home",    l:"Главная",       ico:"⌂"},
+      {id:"items",   l:"Товары",        ico:"◻"},
+      {id:"activity",l:"Движения",      ico:"↕",badge:overdueCount},
+      {id:"branches",l:"Филиалы",       ico:"◎"},
+      {id:"recipients",l:"Получатели",  ico:"◉"},
+    ]},
+    {label:"Управление",admin:true,items:[
+      {id:"reports",   l:"Отчёты",        ico:"≡"},
+      {id:"suppliers", l:"Поставщики",    ico:"◈"},
+      {id:"settings",  l:"Справочники",   ico:"⚙"},
+      {id:"users",     l:"Пользователи",  ico:"◉"},
+    ]}
+  ].filter(g=>!g.admin||(r==="admin"||r==="director"));
+  return<aside style={{width:220,background:"var(--nav)",display:"flex",flexDirection:"column",flexShrink:0}}>
+    <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>📦</div>
+        <div>
+          <div className="ff" style={{fontWeight:700,fontSize:15,color:"white"}}>Учёт и Склад</div>
+          <div style={{fontSize:10,color:"var(--navm)",letterSpacing:".04em"}}>Маркетинг</div>
+        </div>
+      </div>
+    </div>
+    <nav style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
+      {groups.map((g,gi)=><div key={gi} style={{marginBottom:6}}>
+        {g.label&&<div style={{padding:"8px 10px 4px",fontSize:10,fontWeight:600,color:"var(--navm)",letterSpacing:".1em",textTransform:"uppercase"}}>{g.label}</div>}
+        {g.items.map(n=>{const act=view===n.id;return<button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"8px 10px",marginBottom:1,borderRadius:9,background:act?"var(--nav3)":"transparent",color:act?"white":"var(--navm)",fontSize:13,fontWeight:act?600:400,textAlign:"left",cursor:"pointer",transition:"all .12s"}}
+          onMouseEnter={e=>{if(!act){e.currentTarget.style.background="var(--nav2)";e.currentTarget.style.color="white"}}}
+          onMouseLeave={e=>{if(!act){e.currentTarget.style.background="transparent";e.currentTarget.style.color="var(--navm)"}}}>
+          <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0,opacity:act?1:.7}}>{n.ico}</span>
+          <span style={{flex:1}}>{n.l}</span>
+          {n.badge>0&&<span style={{background:"var(--rd)",color:"white",borderRadius:999,padding:"1px 6px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
+        </button>})}
+      </div>)}
+    </nav>
+    <div style={{padding:"10px 10px",borderTop:"1px solid rgba(255,255,255,.06)"}}>
+      <RTDot on={rtOn}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 4px",marginTop:8}}>
+        <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--ink),var(--pu))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:13,fontWeight:700,flexShrink:0}}>{(profile.name||profile.email||"?")[0].toUpperCase()}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div className="ff" style={{fontSize:12,color:"white",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile.name||profile.email}</div>
+          <div style={{fontSize:10,color:"var(--navm)"}}>{ROLES[profile.role]||profile.role}</div>
+        </div>
+        <button onClick={onLogout} title="Выйти" style={{padding:6,borderRadius:7,color:"var(--navm)",cursor:"pointer",fontSize:14,transition:"color .12s"}} onMouseEnter={e=>e.target.style.color="white"} onMouseLeave={e=>e.target.style.color="var(--navm)"}>⎋</button>
+      </div>
+    </div>
+  </aside>
+}
+
+/* ══ HOME / MENU ══════════════════════════════════════════════════════ */
+function Home({S,stock,checkouts,setView}){
+  const{products,movements,branches,recipients,profile,toast}=S;
+  const[sheet,setSheet]=useState(null);
+  const active=products.filter(p=>!p.archived);
+  const totalQty=active.reduce((a,p)=>a+(stock[p.id]||0),0);
+  const totalVal=active.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
+  const overdue=checkouts.filter(c=>c.due_date&&c.due_date<TODAY);
+  const soon=checkouts.filter(c=>c.due_date&&c.due_date>TODAY&&c.due_date<=IN3D);
+  const lastOut=useMemo(()=>[...movements].filter(m=>m.type==="out"&&m.issuer_id===profile?.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""))[0],[movements,profile]);
+  const recent=[...movements].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
+  const lowStock=active.filter(p=>(stock[p.id]||0)<5);
+  const byBranch=branches.map(b=>{const os=checkouts.filter(c=>c.branch_id===b.id);return{...b,qty:os.reduce((a,c)=>a+c.remaining,0),val:os.reduce((a,c)=>a+(active.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0)}});
+  const morning=new Date().getHours()<12?"Доброе утро":new Date().getHours()<18?"Добрый день":"Добрый вечер";
+  const pName=id=>products.find(p=>p.id===id)?.name??"—";
+  const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
+
+  const ActionCard=({ico,title,sub,type,prefill={},accent,tag})=>{
+    const[h,sh]=useState(false);
+    return<button onClick={()=>setSheet({type,prefill})} onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)}
+      style={{textAlign:"left",padding:"22px",background:h?accent+"12":"var(--sur)",border:`1px solid ${h?accent:"var(--brd)"}`,borderRadius:16,cursor:"pointer",transition:"all .18s",boxShadow:h?"var(--sh2)":"var(--sh)",width:"100%",position:"relative"}}>
+      {tag&&<div style={{position:"absolute",top:12,right:12,background:accent,color:"white",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{tag}</div>}
+      <div style={{fontSize:30,marginBottom:12}}>{ico}</div>
+      <div className="ff" style={{fontWeight:700,fontSize:16,color:"var(--tx)",marginBottom:4}}>{title}</div>
+      <div style={{fontSize:12,color:"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sub}</div>
+    </button>
+  };
+
+  return<div style={{height:"100%",overflow:"auto",background:"var(--bg)"}}>
+    <div style={{padding:"28px 28px 24px",background:"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
+        <div>
+          <h1 className="ff" style={{fontSize:28,fontWeight:700,color:"var(--tx)",letterSpacing:"-.02em"}}>{morning}, {profile?.name||profile?.email?.split("@")[0]} 👋</h1>
+          <p style={{fontSize:13,color:"var(--tx3)",marginTop:4}}>{ROLES[profile?.role]} · {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}</p>
+        </div>
+        <Btn v="secondary" onClick={()=>setView("items")}>Все товары →</Btn>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+        <ActionCard ico="📥" type="in"     accent="var(--gr)"  title="Принять товар"  sub="Новая поставка от поставщика"/>
+        <ActionCard ico="📤" type="out"    accent="var(--ink)" title={lastOut?"Повторить выдачу":"Выдать товар"}
+          sub={lastOut?`→ ${rName(lastOut.recipient_id)} · ${pName(lastOut.product_id)}`:"На мероприятие или акцию"}
+          prefill={lastOut?{product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz}:{}}
+          tag={lastOut?"⟳ Повторить":null}/>
+        <ActionCard ico="🔄" type="return" accent="var(--pu)"  title="Принять возврат" sub="Сотрудник вернул товар"/>
+      </div>
+    </div>
+
+    <div style={{padding:24}}>
+      {overdue.length>0&&<div className="fade-up" style={{background:"var(--sur)",border:"1px solid #FECACA",borderLeft:"4px solid var(--rd)",borderRadius:14,padding:"14px 18px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span className="ff" style={{fontWeight:700,fontSize:15,color:"var(--rd)"}}>⚠ Просрочено {overdue.length} выдач</span>
+          <Btn v="ghost" size="sm" onClick={()=>setView("branches")}>Подробнее →</Btn>
+        </div>
+        {overdue.slice(0,3).map((c,i)=>{const days=Math.floor((new Date()-new Date(c.due_date))/86400000);return<div key={i} style={{fontSize:12,color:"var(--tx2)",display:"flex",gap:8,alignItems:"center",marginBottom:3}}>
+          <span style={{fontWeight:600}}>{rName(c.recipient_id)}</span><span>—</span><span>{pName(c.product_id)}</span><span>× {c.remaining} шт</span><Badge color="red">+{days}д</Badge>
+        </div>})}
+      </div>}
+
+      {soon.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FDE68A",borderLeft:"4px solid var(--am)",borderRadius:14,padding:"12px 18px",marginBottom:12}}>
+        <span className="ff" style={{fontWeight:600,fontSize:13,color:"var(--am)"}}>⏳ Истекают в ближайшие 3 дня: {soon.length} выдач</span>
+        <div style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap"}}>
+          {soon.map((c,i)=><Badge key={i} color="amber">{rName(c.recipient_id)} · {pName(c.product_id)} до {c.due_date}</Badge>)}
+        </div>
+      </div>}
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+        {[{v:active.length,l:"Позиций товаров",c:"var(--ink)"},{v:`${totalQty} шт`,l:"Единиц на складе",c:"var(--gr)"},{v:som(totalVal),l:"Стоимость склада",c:"var(--pu)"},{v:overdue.length,l:"Просрочено выдач",c:overdue.length?"var(--rd)":"var(--gr)"}].map((k,i)=>
+          <div key={i} className="card" style={{padding:"16px 18px",borderTop:`3px solid ${k.c}`}}>
+            <div className="ff" style={{fontSize:24,fontWeight:800,color:k.c,letterSpacing:"-.02em"}}>{k.v}</div>
+            <div style={{fontSize:11,color:"var(--tx3)",marginTop:4}}>{k.l}</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16}}>
+        <div className="card" style={{padding:0,overflow:"hidden"}}>
+          <div className="ff" style={{padding:"14px 18px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:15}}>Последние операции</div>
+          {recent.length===0?<div style={{padding:24,textAlign:"center",color:"var(--tx3)"}}>Нет операций</div>:
+          recent.map((m,i)=><div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 18px",borderBottom:i<recent.length-1?"1px solid var(--brd)":"none"}}>
+            <TBadge type={m.type}/>
+            <span style={{fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:13}}>{pName(m.product_id)}</span>
+            <span className="ff" style={{fontWeight:700,color:"var(--tx2)"}}>×{m.qty}</span>
+            <span style={{fontSize:11,color:"var(--tx3)"}}>{m.recipient_id?rName(m.recipient_id):"—"}</span>
+            <span style={{fontSize:10,color:"var(--tx3)",fontFamily:"monospace"}}>{(m.created_at||"").slice(0,10)}</span>
+          </div>)}
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {lowStock.length>0&&<div className="card" style={{padding:0,overflow:"hidden"}}>
+            <div style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <span className="ff" style={{fontWeight:600,fontSize:14,color:"var(--am)"}}>📉 Заканчивается</span>
+              <Badge color="amber">{lowStock.length}</Badge>
             </div>
-            <div style={{marginTop:20,fontSize:11,color:"#9ca3af"}}>По умолчанию: admin / admin</div>
+            {lowStock.slice(0,4).map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid var(--brd)",fontSize:13}}>
+              <span style={{fontWeight:500}}>{p.name}</span>
+              <Badge color={(stock[p.id]||0)===0?"red":"amber"}>{stock[p.id]||0} шт</Badge>
+            </div>)}
+          </div>}
+
+          <div className="card" style={{padding:0,overflow:"hidden"}}>
+            <div className="ff" style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:14}}>По филиалам</div>
+            {byBranch.map((b,i)=><div key={b.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<byBranch.length-1?"1px solid var(--brd)":"none"}}>
+              <div><div style={{fontWeight:500,fontSize:13}}>{b.name}</div><div style={{fontSize:10,color:"var(--tx3)"}}>{b.city}</div></div>
+              <div style={{textAlign:"right"}}>
+                <div className="ff" style={{fontWeight:700,fontSize:16,color:b.qty>0?"var(--ink)":"var(--tx3)"}}>{b.qty}</div>
+                <div style={{fontSize:10,color:"var(--tx3)"}}>{som(b.val)}</div>
+              </div>
+            </div>)}
           </div>
         </div>
-      );
-    }
+      </div>
+    </div>
 
-    // ====== СПИСОК ТОВАРОВ ======
-    function ItemsView({products,setProducts,stock,can,addMov,showToast,movements,activeCheckouts,gr,recipients,customCategories,productTypes,locations,suppliers,directions,branches,userBranchId,isRestricted}){
-      const [search,setSearch]=useState("");
-      const [catFilter,setCatF]=useState("all");
-      const [viewMode,setVM]=useState("grid");
-      const [showAdd,setShowAdd]=useState(false);
-      const [selItem,setSelItem]=useState(null);
-      const [form,setForm]=useState({name:"",sku:"",categoryId:customCategories[0]?.id||"",price:850,qty:0,locationId:locations[0]?.id||4,directionId:directions[0]?.id||1,supplierId:suppliers[0]?.id||1,productTypeId:productTypes[0]?.id||"t1"});
+    <Sheet open={!!sheet} onClose={()=>setSheet(null)} title={sheet?TL[sheet.type]:""} dirty={false}>
+      {sheet&&<OpForm type={sheet.type} prefill={sheet.prefill} onSave={()=>{setSheet(null);toast(`${TL[sheet.type]} сохранена`)}} onCancel={()=>setSheet(null)} S={{...S,stock}}/>}
+    </Sheet>
+  </div>
+}
 
-      const visibleProducts = isRestricted
-        ? products.filter(p => !p.archived && locations.find(l=>l.id===p.locationId)?.branchId === userBranchId)
-        : products.filter(p => !p.archived);
+/* ══ ITEMS VIEW ═══════════════════════════════════════════════════════ */
+function ItemsView({S,stock,checkouts}){
+  const{products,setProducts,categories,suppliers,directions,locations,productTypes,recipients,can,toast,profile}=S;
+  const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
+  const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
+  const visible=products.filter(p=>!p.archived);
+  const filtered=visible.filter(p=>(catF==="all"||p.category_id===catF)&&(!search||p.name?.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())));
+  const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:""});
+  const saveProduct=async()=>{if(!form.name.trim()){toast("Укажите название","error");return}setL(true);const{error}=await sb.from("products").insert({name:form.name,sku:form.sku||null,category_id:form.category_id?Number(form.category_id)||form.category_id:null,price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,supplier_id:form.supplier_id?Number(form.supplier_id):null,product_type_id:form.product_type_id?Number(form.product_type_id)||form.product_type_id:null,direction_id:form.direction_id?Number(form.direction_id):null,archived:false});if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}setL(false)};
+  const totalVal=visible.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
 
-      const filtered = visibleProducts.filter(p =>
-        (catFilter==="all"||p.categoryId===catFilter) &&
-        (!search||p.name.toLowerCase().includes(search.toLowerCase())||p.sku.toLowerCase().includes(search.toLowerCase()))
-      );
-
-      const saveProduct = () => {
-        if(!form.name.trim()){showToast("Укажите название",false);return;}
-        const newId = Math.max(0,...products.map(p=>p.id))+1;
-        setProducts(p=>[...p,{...form,id:newId,price:Number(form.price),locationId:Number(form.locationId),directionId:Number(form.directionId),supplierId:Number(form.supplierId),productTypeId:form.productTypeId,archived:false,sku:form.sku||`SKU-${newId}`}]);
-        if(Number(form.qty)>0) addMov({type:"in",productId:newId,qty:Number(form.qty),locationId:Number(form.locationId),issuerId:1,date:TODAY,notes:"Начальный остаток",supplierId:Number(form.supplierId),szDocumentNumber:""});
-        setShowAdd(false);showToast("Товар добавлен");
-      };
-
-      const totalItems = visibleProducts.length;
-      const totalQty = visibleProducts.reduce((a,p)=>a+(stock[p.id]||0),0);
-      const totalVal = visibleProducts.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
-      const availLocs = isRestricted ? locations.filter(l=>l.branchId===userBranchId) : locations;
-
-      return (
-        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-              <div style={{flex:1,position:"relative"}}>
-                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#9ca3af"}}>🔍</span>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск товаров..." style={{width:"100%",padding:"8px 10px 8px 32px",border:"1px solid #e5e7eb",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
-              </div>
-              <div style={{display:"flex",border:"1px solid #e5e7eb",borderRadius:8,overflow:"hidden"}}>
-                {[["grid","⊞"],["list","≡"]].map(([m,icon])=><button key={m} onClick={()=>setVM(m)} style={{padding:"7px 12px",border:"none",cursor:"pointer",fontSize:15,background:viewMode===m?"#1a1d2e":"white",color:viewMode===m?"white":"#6b7280"}}>{icon}</button>)}
-              </div>
-              {can("edit")&&<button onClick={()=>setShowAdd(true)} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13,cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>+</span> Добавить</button>}
-            </div>
-            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              <button onClick={()=>setCatF("all")} style={catBtn(catFilter==="all","#6366f1")}>Все ({totalItems})</button>
-              {customCategories.map(c=>{const cnt=visibleProducts.filter(p=>p.categoryId===c.id).length;if(!cnt)return null;return <button key={c.id} onClick={()=>setCatF(c.id)} style={catBtn(catFilter===c.id,c.color)}>{c.icon} {c.name} ({cnt})</button>})}
-              <div style={{marginLeft:"auto",display:"flex",gap:8}}><StatChip label="единиц" value={totalQty} color="#6366f1"/><StatChip label="стоимость" value={som(totalVal)} color="#10b981"/></div>
-            </div>
-          </div>
-          <div style={{flex:1,overflow:"auto",padding:20}}>
-            {showAdd&&can("edit")&&(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:18,marginBottom:18,boxShadow:"0 4px 16px rgba(0,0,0,0.06)"}}>
-                <div style={{fontWeight:700,fontSize:14,color:"#1f2937",marginBottom:14}}>Новый товар</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                  <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={INP}/></div>
-                  <div><div style={LBL}>Артикул</div><input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="Авто" style={INP}/></div>
-                  <div><div style={LBL}>Категория</div><select value={form.categoryId} onChange={e=>setForm({...form,categoryId:e.target.value})} style={INP}>{customCategories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}</select></div>
-                  <div><div style={LBL}>Тип продукта</div><select value={form.productTypeId} onChange={e=>setForm({...form,productTypeId:e.target.value})} style={INP}>{productTypes.map(pt=><option key={pt.id} value={pt.id}>{pt.name}</option>)}</select></div>
-                  <div><div style={LBL}>Цена (сом)</div><input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={INP}/></div>
-                  <div><div style={LBL}>Место</div><select value={form.locationId} onChange={e=>setForm({...form,locationId:Number(e.target.value)})} style={INP}>{availLocs.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
-                  <div><div style={LBL}>Направление</div><select value={form.directionId} onChange={e=>setForm({...form,directionId:Number(e.target.value)})} style={INP}>{directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
-                  <div><div style={LBL}>Поставщик</div><select value={form.supplierId} onChange={e=>setForm({...form,supplierId:Number(e.target.value)})} style={INP}>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
-                  <div><div style={LBL}>Начальный остаток</div><input type="number" value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} style={INP}/></div>
-                </div>
-                <div style={{display:"flex",gap:8,marginTop:14}}>
-                  <button onClick={saveProduct} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 20px",borderRadius:8,fontSize:13,fontWeight:600}}>Сохранить</button>
-                  <button onClick={()=>setShowAdd(false)} style={{background:"#f3f4f6",color:"#374151",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13}}>Отмена</button>
-                </div>
-              </div>
-            )}
-            {filtered.length===0&&<div style={{textAlign:"center",padding:60,color:"#9ca3af"}}><div style={{fontSize:48,marginBottom:12}}>📦</div><div style={{fontSize:14,fontWeight:600,color:"#374151"}}>Товаров нет</div></div>}
-            {viewMode==="grid"?(
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14}}>
-                {filtered.map(p=>{
-                  const qty=stock[p.id]||0;
-                  const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦",name:"—"};
-                  const dir=directions.find(d=>d.id===p.directionId);
-                  const loc=locations.find(l=>l.id===p.locationId);
-                  const pt=productTypes.find(pt=>pt.id===p.productTypeId);
-                  return (
-                    <div key={p.id} style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden",cursor:"pointer"}} onClick={()=>setSelItem(p)}>
-                      <div style={{height:80,background:`linear-gradient(135deg,${cat.color}22,${cat.color}44)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{cat.icon}</div>
-                      <div style={{padding:10}}>
-                        <div style={{fontWeight:600,fontSize:13,marginBottom:2}}>{p.name}</div>
-                        <div style={{fontSize:11,color:"#6b7280"}}>{pt?.name||"—"} · {som(p.price)} · {loc?.name||"—"}</div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-                          <span style={{fontWeight:700,color:qty>5?"#16a34a":qty>0?"#f59e0b":"#dc2626"}}>{qty} шт</span>
-                          {dir&&<span style={{fontSize:10,background:"#eff6ff",borderRadius:10,padding:"1px 6px",color:"#2563eb"}}>{dir.name}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  )})}
-              </div>
-            ):(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
-                <table style={{width:"100%",fontSize:13}}>
-                  <thead><tr style={{background:"#f9fafb"}}>{["Товар","Тип","Категория","Цена","Остаток","Направление","Место"].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",fontSize:11,color:"#9ca3af"}}>{h}</th>)}</tr></thead>
-                  <tbody>
-                    {filtered.map((p,i)=>{
-                      const qty=stock[p.id]||0;const cat=customCategories.find(c=>c.id===p.categoryId);const dir=directions.find(d=>d.id===p.directionId);const pt=productTypes.find(pt=>pt.id===p.productTypeId);
-                      return <tr key={p.id} style={{borderBottom:"1px solid #f3f4f6",background:i%2?"#fafafa":"white",cursor:"pointer"}} onClick={()=>setSelItem(p)}>
-                        <td style={{padding:"10px 14px",fontWeight:600}}>{p.name}</td>
-                        <td style={{padding:"10px 14px"}}>{pt?.name||"—"}</td>
-                        <td style={{padding:"10px 14px"}}>{cat&&<span style={{background:cat.color+"20",color:cat.color,padding:"2px 8px",borderRadius:10,fontSize:11}}>{cat.name}</span>}</td>
-                        <td style={{padding:"10px 14px"}}>{som(p.price)}</td>
-                        <td style={{padding:"10px 14px",fontWeight:700,color:qty>5?"#16a34a":qty>0?"#f59e0b":"#dc2626"}}>{qty} шт</td>
-                        <td style={{padding:"10px 14px"}}>{dir?.name||"—"}</td>
-                        <td style={{padding:"10px 14px"}}>{locations.find(l=>l.id===p.locationId)?.name||"—"}</td>
-                      </tr>
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-          {selItem&&<ItemModal p={selItem} stock={stock} movements={movements} activeCheckouts={activeCheckouts} addMov={addMov} showToast={showToast} gr={gr} can={can} customCategories={customCategories} productTypes={productTypes} locations={locations} recipients={recipients} suppliers={suppliers} directions={directions} onClose={()=>setSelItem(null)}/>}
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
+      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
+        <Inp value={search} onChange={e=>setSrch(e.target.value)} placeholder="Поиск по названию или артикулу…" pfx="🔍" style={{flex:1}}/>
+        <div style={{display:"flex",border:"1px solid var(--brd)",borderRadius:9,overflow:"hidden"}}>
+          {[["grid","⊞"],["list","≡"]].map(([m,ic])=><button key={m} onClick={()=>setMode(m)} style={{padding:"7px 10px",background:mode===m?"var(--nav)":"var(--sur)",color:mode===m?"white":"var(--tx2)",fontSize:15,transition:"all .12s"}}>{ic}</button>)}
         </div>
-      );
-    }
-
-    // ====== МОДАЛКА ТОВАРА (полная версия) ======
-    function ItemModal({p,stock,movements,activeCheckouts,addMov,showToast,gr,can,customCategories,productTypes,locations,recipients,suppliers,directions,onClose}){
-      const qty=stock[p.id]||0;
-      const history=[...movements].filter(m=>m.productId===p.id).sort((a,b)=>b.date.localeCompare(a.date));
-      const onHands=activeCheckouts.filter(c=>c.productId===p.id);
-      const [rqty,setRqty]=useState(1);
-      const cat=customCategories.find(c=>c.id===p.categoryId)||{color:"#6366f1",icon:"📦",name:"—"};
-      const pt=productTypes.find(pt=>pt.id===p.productTypeId);
-      const dir=directions.find(d=>d.id===p.directionId);
-      const sup=suppliers.find(s=>s.id===p.supplierId);
-
-      return (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:20}} onClick={onClose}>
-          <div style={{background:"white",borderRadius:16,width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-            <div style={{height:140,background:`linear-gradient(135deg,${cat.color}33,${cat.color}66)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-              <span style={{fontSize:56}}>{cat.icon}</span>
-              <button onClick={onClose} style={{position:"absolute",top:12,right:12,background:"white",border:"none",borderRadius:8,padding:"4px 10px",cursor:"pointer",fontSize:16}}>✕</button>
-              <div style={{position:"absolute",bottom:12,right:12,background:"white",borderRadius:20,padding:"4px 14px",fontWeight:800,fontSize:20,color:qty===0?"#dc2626":qty<5?"#f59e0b":"#16a34a"}}>{qty} шт</div>
-            </div>
-            <div style={{padding:"16px 20px"}}>
-              <div style={{fontWeight:700,fontSize:18,marginBottom:4}}>{p.name}</div>
-              <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-                <span style={{background:cat.color+"20",color:cat.color,padding:"2px 10px",borderRadius:10,fontSize:11,fontWeight:600}}>{cat.name}</span>
-                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{p.sku}</span>
-                {pt&&<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{pt.name}</span>}
-                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11}}>{locations.find(l=>l.id===p.locationId)?.name||"—"}</span>
-                <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 10px",borderRadius:10,fontSize:11,fontWeight:600}}>{som(p.price)}</span>
-                {dir&&<span style={{background:"#eff6ff",color:"#2563eb",padding:"2px 10px",borderRadius:10,fontSize:11}}>{dir.name}</span>}
-                {sup&&<span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:10,fontSize:11}}>{sup.name}</span>}
-              </div>
-
-              {onHands.length>0&&(
-                <div style={{background:"#eff6ff",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:6}}>НА РУКАХ ({onHands.reduce((a,c)=>a+c.remaining,0)} шт)</div>
-                  {onHands.map((c,i)=>{
-                    const isOD=c.dueDate&&c.dueDate<TODAY;
-                    const days=c.dueDate?Math.floor((new Date()-new Date(c.dueDate))/86400000):null;
-                    return (
-                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:i<onHands.length-1?"1px solid #bfdbfe":"none"}}>
-                        <span style={{fontSize:12,color:"#1e40af",fontWeight:500}}>{gr(c.recipientId)}{c.szDocumentNumber?` · ${c.szDocumentNumber}`:""}</span>
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          <span style={{fontSize:12,fontWeight:700,color:"#2563eb"}}>{c.remaining} шт</span>
-                          {isOD&&<span style={{fontSize:10,background:"#fef2f2",color:"#dc2626",padding:"1px 6px",borderRadius:4,fontWeight:700}}>+{days}д</span>}
-                          {can("move")&&<button onClick={()=>{addMov({type:"return",productId:p.id,qty:c.remaining,locationId:p.locationId,issuerId:1,recipientId:c.recipientId,branchId:c.branchId,date:TODAY,condition:"хорошее",notes:""});showToast("Возврат оформлен");}} style={{background:"#7c3aed",color:"white",border:"none",padding:"3px 8px",borderRadius:5,fontSize:10,fontWeight:600}}>Вернуть</button>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {can("move")&&(
-                <div style={{display:"flex",gap:6,marginBottom:14,alignItems:"center"}}>
-                  <button onClick={()=>{addMov({type:"in",productId:p.id,qty:Number(rqty),locationId:p.locationId,issuerId:1,date:TODAY,notes:"Приход",supplierId:p.supplierId,szDocumentNumber:""});showToast(`+${rqty} шт`);}} style={{background:"#f0fdf4",color:"#16a34a",border:"1px solid #bbf7d0",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>+ Приход</button>
-                  <input type="number" min={1} value={rqty} onChange={e=>setRqty(Number(e.target.value))} style={{...INP,width:70,textAlign:"center"}}/>
-                  <button onClick={()=>{if(qty<rqty){showToast("Недостаточно остатка",false);return;}addMov({type:"writeoff",productId:p.id,qty:Number(rqty),locationId:p.locationId,issuerId:1,date:TODAY,notes:"Списание"});showToast("Списано");}} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>Списать</button>
-                </div>
-              )}
-
-              <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>История ({history.length})</div>
-              <div style={{maxHeight:200,overflow:"auto"}}>
-                {history.map((m,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #f3f4f6"}}>
-                    <span style={{background:T_BG[m.type],color:T_COLOR[m.type],padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:600,whiteSpace:"nowrap"}}>{T_LABEL[m.type]}</span>
-                    <span style={{fontWeight:600,color:"#374151"}}>×{m.qty}</span>
-                    {m.recipientId&&<span style={{fontSize:11,color:"#6b7280"}}>{gr(m.recipientId)}</span>}
-                    {m.purpose&&<span style={{fontSize:11,color:"#9ca3af"}}>· {m.purpose}</span>}
-                    {m.szDocumentNumber&&<span style={{fontSize:10,background:"#f3f4f6",color:"#6b7280",padding:"1px 6px",borderRadius:4}}>{m.szDocumentNumber}</span>}
-                    <span style={{marginLeft:"auto",fontSize:10,color:"#9ca3af",fontFamily:"monospace"}}>{m.date}</span>
-                  </div>
-                ))}
-                {history.length===0&&<div style={{padding:"12px 0",fontSize:12,color:"#9ca3af",textAlign:"center"}}>Пока нет операций</div>}
-              </div>
-            </div>
-          </div>
+        {can("edit")&&<Btn onClick={()=>setAdd(!showAdd)} icon="➕">Добавить</Btn>}
+      </div>
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+        <button onClick={()=>setCatF("all")} style={{padding:"4px 12px",borderRadius:999,border:`1px solid ${catF==="all"?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:catF==="all"?600:400,background:catF==="all"?"var(--ink-l)":"var(--sur)",color:catF==="all"?"var(--ink)":"var(--tx2)",cursor:"pointer",transition:"all .12s"}}>Все ({visible.length})</button>
+        {categories.map(cat=>{const n=visible.filter(p=>p.category_id===cat.id||p.category_id===cat.name).length;if(!n)return null;const act=catF===cat.id||catF===cat.name;return<button key={cat.id} onClick={()=>setCatF(act?"all":cat.id||cat.name)} style={{padding:"4px 12px",borderRadius:999,border:`1px solid ${act?(cat.color||"var(--ink)"):"var(--brd)"}`,fontSize:12,fontWeight:act?600:400,background:act?(cat.color||"var(--ink)")+"18":"var(--sur)",color:act?(cat.color||"var(--ink)"):"var(--tx2)",cursor:"pointer",transition:"all .12s"}}>{cat.icon&&<span style={{marginRight:4}}>{cat.icon}</span>}{cat.name} ({n})</button>})}
+        <span style={{marginLeft:"auto",fontSize:12,color:"var(--tx3)"}}>{visible.reduce((a,p)=>a+(stock[p.id]||0),0)} шт · {som(totalVal)}</span>
+      </div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:20}}>
+      {showAdd&&<div className="card" style={{marginBottom:18,border:"1.5px solid var(--ink)",padding:0,overflow:"hidden"}}>
+        <div style={{padding:"12px 20px",borderBottom:"1px solid var(--brd)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span className="ff" style={{fontWeight:700,fontSize:16}}>Новый товар</span><Btn v="ghost" size="sm" onClick={()=>setAdd(false)}>✕</Btn>
         </div>
-      );
-    }
-
-    // ====== ДВИЖЕНИЯ ======
-    function ActivityView({movements,products,overdue,can,addMov,showToast,gp,gr,gb,recipients,customCategories,locations,suppliers,directions,productTypes,branches,userBranchId,isRestricted}){
-      const [typeF,setTypeF]=useState("all");
-      const [search,setSearch]=useState("");
-      const [form,setForm]=useState(null);
-
-      const visibleMovs = isRestricted
-        ? movements.filter(m=>locations.find(l=>l.id===m.locationId)?.branchId===userBranchId)
-        : movements;
-
-      const sorted = [...visibleMovs]
-        .filter(m=>(typeF==="all"||m.type===typeF) &&
-          (!search||(gp(m.productId)+gr(m.recipientId||0)+(m.purpose||"")+(m.szDocumentNumber||"")+(m.notes||"")).toLowerCase().includes(search.toLowerCase())))
-        .sort((a,b)=>b.date.localeCompare(a.date));
-
-      const openForm = type => setForm({type,productId:"",qty:1,recipientId:"",branchId:1,purpose:"",dueDate:"",condition:"хорошее",notes:"",supplierId:suppliers[0]?.id||1,szDocumentNumber:"",locationId:""});
-
-      const submit = () => {
-        if(!form.productId){showToast("Выберите товар",false);return;}
-        const product = products.find(p=>p.id===Number(form.productId));
-        if(!product){showToast("Товар не найден",false);return;}
-        const r = recipients.find(r=>r.id===Number(form.recipientId));
-        const payload = {
-          type:form.type,
-          productId:Number(form.productId),
-          qty:Number(form.qty),
-          issuerId:1,
-          locationId:Number(form.locationId)||product.locationId,
-          date:TODAY,
-          notes:form.notes||"",
-        };
-        if(form.type==="out"){
-          if(!r){showToast("Выберите получателя",false);return;}
-          payload.recipientId=r.id;
-          payload.branchId=r.branchId;
-          payload.purpose=form.purpose;
-          payload.dueDate=form.dueDate;
-          payload.szDocumentNumber=form.szDocumentNumber;
-        } else if(form.type==="return"){
-          if(!r){showToast("Выберите получателя",false);return;}
-          payload.recipientId=r.id;
-          payload.branchId=r.branchId;
-          payload.condition=form.condition;
-        } else if(form.type==="in"){
-          payload.supplierId=Number(form.supplierId);
-          payload.szDocumentNumber=form.szDocumentNumber;
-        }
-        addMov(payload);
-        setForm(null);
-        showToast(T_LABEL[form.type]+" сохранён");
-      };
-
-      const visibleProducts = isRestricted
-        ? products.filter(p=>!p.archived&&locations.find(l=>l.id===p.locationId)?.branchId===userBranchId)
-        : products.filter(p=>!p.archived);
-
-      const visibleLocations = isRestricted ? locations.filter(l=>l.branchId===userBranchId) : locations;
-
-      return (
-        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
-            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
-              <div style={{fontSize:16,fontWeight:700,color:"#1f2937"}}>Движения товаров</div>
-              {can("move")&&(
-                <div style={{marginLeft:"auto",display:"flex",gap:6}}>
-                  {[{t:"out",l:"↑ Выдать",c:"#6366f1"},{t:"return",l:"↓ Возврат",c:"#7c3aed"},{t:"writeoff",l:"✕ Списать",c:"#dc2626"},{t:"in",l:"+ Приход",c:"#16a34a"}].map(op=>(
-                    <button key={op.t} onClick={()=>openForm(op.t)} style={{background:op.c,color:"white",border:"none",padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600}}>{op.l}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {overdue.length>0&&(
-              <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"8px 14px",marginBottom:12,fontSize:12,color:"#dc2626",fontWeight:600}}>
-                ⚠ {overdue.length} выдач просрочено — требуется возврат
-              </div>
-            )}
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {["all","out","in","return","writeoff"].map(t=>(
-                <button key={t} onClick={()=>setTypeF(t)} style={{padding:"5px 12px",borderRadius:20,border:"1px solid",fontSize:11,cursor:"pointer",background:typeF===t?"#1a1d2e":"white",borderColor:typeF===t?"#1a1d2e":"#e5e7eb",color:typeF===t?"white":"#6b7280",fontWeight:typeF===t?600:400}}>
-                  {t==="all"?"Все":T_LABEL[t]}
-                </button>
-              ))}
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Поиск..." style={{...INP,width:200,marginLeft:"auto"}}/>
-            </div>
+        <div style={{padding:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr",gap:12,marginBottom:14}}>
+            <Fld label="Название"><Inp value={form.name} onChange={e=>setForm({...form,name:e.target.value})} autoFocus/></Fld>
+            <Fld label="Артикул"><Inp value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="SKU-001"/></Fld>
+            <Fld label="Категория"><Sel value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}><option value="">—</option>{categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}</Sel></Fld>
+            <Fld label="Тип продукта"><Sel value={form.product_type_id} onChange={e=>setForm({...form,product_type_id:e.target.value})}><option value="">—</option>{productTypes.map(pt=><option key={pt.id} value={pt.id}>{pt.name}</option>)}</Sel></Fld>
+            <Fld label="Цена (сом)"><Inp type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/></Fld>
+            <Fld label="Место хранения"><Sel value={form.location_id} onChange={e=>setForm({...form,location_id:e.target.value})}><option value="">—</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</Sel></Fld>
+            <Fld label="Поставщик"><Sel value={form.supplier_id} onChange={e=>setForm({...form,supplier_id:e.target.value})}><option value="">—</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Sel></Fld>
+            <Fld label="Направление"><Sel value={form.direction_id} onChange={e=>setForm({...form,direction_id:e.target.value})}><option value="">—</option>{directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</Sel></Fld>
           </div>
-
-          <div style={{flex:1,overflow:"auto",padding:20}}>
-            {form&&(
-              <div style={{background:"white",borderRadius:12,border:`2px solid ${T_COLOR[form.type]}`,padding:18,marginBottom:16}}>
-                <div style={{fontWeight:700,fontSize:14,color:T_COLOR[form.type],marginBottom:14}}>{T_LABEL[form.type]}</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                  <div><div style={LBL}>Товар</div>
-                    <select value={form.productId} onChange={e=>setForm({...form,productId:e.target.value})} style={INP}>
-                      <option value="">— выбрать —</option>
-                      {visibleProducts.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                  </div>
-                  <div><div style={LBL}>Количество</div><input type="number" min={1} value={form.qty} onChange={e=>setForm({...form,qty:e.target.value})} style={INP}/></div>
-                  <div><div style={LBL}>Место (склад)</div>
-                    <select value={form.locationId} onChange={e=>setForm({...form,locationId:e.target.value})} style={INP}>
-                      <option value="">— из товара —</option>
-                      {visibleLocations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
-                    </select>
-                  </div>
-
-                  {(form.type==="out"||form.type==="return")&&<>
-                    <div><div style={LBL}>{form.type==="out"?"Получатель":"Возврат от"}</div>
-                      <select value={form.recipientId} onChange={e=>setForm({...form,recipientId:e.target.value})} style={INP}>
-                        <option value="">— выбрать —</option>
-                        {recipients.map(r=><option key={r.id} value={r.id}>{r.name} · {gb(r.branchId)}</option>)}
-                      </select>
-                    </div>
-                  </>}
-                  {form.type==="out"&&<>
-                    <div><div style={LBL}>Цель</div><input value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})} placeholder="Мероприятие..." style={INP}/></div>
-                    <div><div style={LBL}>Вернуть до</div><input type="date" value={form.dueDate} onChange={e=>setForm({...form,dueDate:e.target.value})} style={INP}/></div>
-                    <div><div style={LBL}>№ служебной записки</div><input value={form.szDocumentNumber} onChange={e=>setForm({...form,szDocumentNumber:e.target.value})} placeholder="СЗ-..." style={INP}/></div>
-                  </>}
-                  {form.type==="return"&&<div><div style={LBL}>Состояние</div>
-                    <select value={form.condition} onChange={e=>setForm({...form,condition:e.target.value})} style={INP}>
-                      <option value="хорошее">Хорошее</option><option value="б/у">Б/у</option><option value="брак">Брак</option>
-                    </select>
-                  </div>}
-                  {form.type==="in"&&<>
-                    <div><div style={LBL}>Поставщик</div>
-                      <select value={form.supplierId} onChange={e=>setForm({...form,supplierId:e.target.value})} style={INP}>
-                        {suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
-                    </div>
-                    <div><div style={LBL}>№ накладной</div><input value={form.szDocumentNumber} onChange={e=>setForm({...form,szDocumentNumber:e.target.value})} placeholder="..." style={INP}/></div>
-                  </>}
-                  <div><div style={LBL}>Примечание</div><input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={INP}/></div>
-                </div>
-                <div style={{display:"flex",gap:8,marginTop:14}}>
-                  <button onClick={submit} style={{background:T_COLOR[form.type],color:"white",border:"none",padding:"8px 20px",borderRadius:8,fontSize:13,fontWeight:600}}>Сохранить</button>
-                  <button onClick={()=>setForm(null)} style={{background:"#f3f4f6",color:"#374151",border:"none",padding:"8px 16px",borderRadius:8,fontSize:13}}>Отмена</button>
-                </div>
-              </div>
-            )}
-
-            <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
-              <div style={{padding:"8px 16px",borderBottom:"1px solid #f3f4f6",fontSize:11,color:"#9ca3af"}}>Записей: {sorted.length}</div>
-              <div style={{maxHeight:"calc(100vh - 280px)",overflow:"auto"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                  <thead style={{position:"sticky",top:0,background:"#f9fafb",zIndex:1}}>
-                    <tr style={{borderBottom:"2px solid #f3f4f6"}}>
-                      {["Дата","Тип","Товар","Шт","Кому / От кого","Филиал","№ СЗ","Цель / Примечание"].map(h=>(
-                        <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:11,color:"#9ca3af",fontWeight:600,whiteSpace:"nowrap",background:"#f9fafb"}}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sorted.map((m,i)=>(
-                      <tr key={m.id} style={{borderBottom:"1px solid #f3f4f6",background:i%2?"#fafafa":"white"}}>
-                        <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:11,fontFamily:"monospace"}}>{m.date}</td>
-                        <td style={{padding:"9px 14px"}}><span style={{background:T_BG[m.type],color:T_COLOR[m.type],padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600}}>{T_LABEL[m.type]}</span></td>
-                        <td style={{padding:"9px 14px",fontWeight:600,color:"#1f2937"}}>{gp(m.productId)}</td>
-                        <td style={{padding:"9px 14px",fontWeight:700,color:"#374151"}}>×{m.qty}</td>
-                        <td style={{padding:"9px 14px",color:"#6b7280",fontSize:12}}>
-                          {m.type==="in"&&m.supplierId?suppliers.find(s=>s.id===m.supplierId)?.name||"—"
-                            :m.recipientId?gr(m.recipientId):"—"}
-                        </td>
-                        <td style={{padding:"9px 14px"}}>{m.branchId?<span style={{background:"#eff6ff",color:"#3b82f6",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:500}}>{gb(m.branchId)}</span>:<span style={{color:"#d1d5db"}}>—</span>}</td>
-                        <td style={{padding:"9px 14px",color:"#6b7280",fontSize:11,fontFamily:"monospace"}}>{m.szDocumentNumber||"—"}</td>
-                        <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:12}}>{m.purpose||m.notes||(m.condition?`Состояние: ${m.condition}`:"—")}</td>
-                      </tr>
-                    ))}
-                    {sorted.length===0&&<tr><td colSpan={8} style={{padding:30,textAlign:"center",color:"#9ca3af"}}>Записей не найдено</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <div style={{display:"flex",gap:8}}><Btn onClick={saveProduct} loading={loading}>Сохранить товар</Btn><Btn v="secondary" onClick={()=>setAdd(false)}>Отмена</Btn></div>
         </div>
-      );
-    }
+      </div>}
 
-    // ====== ФИЛИАЛЫ ======
-    function BranchesView({activeCheckouts,gp,gr,products,branches,locations,userBranchId,isRestricted}){
-      const visibleBranches = isRestricted ? branches.filter(b=>b.id===userBranchId) : branches;
-      const [sel,setSel] = useState(visibleBranches[0]?.id||1);
+      {filtered.length===0&&!showAdd&&<div style={{textAlign:"center",padding:"60px 20px",color:"var(--tx3)"}}>
+        <div className="ff" style={{fontSize:44,marginBottom:12}}>📦</div>
+        <div className="ff" style={{fontSize:18,fontWeight:600,color:"var(--tx2)",marginBottom:4}}>{search?"Ничего не найдено":"Нет товаров"}</div>
+        {!search&&can("edit")&&<Btn onClick={()=>setAdd(true)} style={{marginTop:12}}>+ Добавить первый товар</Btn>}
+      </div>}
 
-      const bOuts = activeCheckouts.filter(c=>c.branchId===sel);
-      const byRec = {};
-      bOuts.forEach(c=>{if(!byRec[c.recipientId])byRec[c.recipientId]=[];byRec[c.recipientId].push(c);});
-      const totalQty = bOuts.reduce((a,c)=>a+c.remaining,0);
-      const totalVal = bOuts.reduce((a,c)=>a+(products.find(p=>p.id===c.productId)?.price||0)*c.remaining,0);
-      const selBranch = branches.find(b=>b.id===sel);
+      {mode==="grid"
+        ?<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(196px,1fr))",gap:14}}>
+          {filtered.map(p=>{const qty=stock[p.id]||0;const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{icon:"📦",color:"#6366F1"};const onH=checkouts.filter(c=>c.product_id===p.id).reduce((a,c)=>a+c.remaining,0);const[h,sh]=useState(false);
+            return<div key={p.id} onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)} onClick={()=>setSel(p)} style={{background:"var(--sur)",borderRadius:16,border:`1px solid ${h?(cat.color||"var(--ink)")+"80":"var(--brd)"}`,overflow:"hidden",transition:"all .18s",boxShadow:h?"var(--sh2)":"var(--sh)",cursor:"pointer"}}>
+              <div style={{height:96,background:`linear-gradient(135deg,${cat.color||"#6366F1"}18,${cat.color||"#6366F1"}30)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+                <span style={{fontSize:36}}>{cat.icon||"📦"}</span>
+                <div style={{position:"absolute",top:8,right:8,background:"var(--sur)",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700,color:qty===0?"var(--rd)":qty<5?"var(--am)":"var(--gr)",boxShadow:"var(--sh)"}}>{qty} шт</div>
+                {onH>0&&<div style={{position:"absolute",top:8,left:8,background:"var(--ink-l)",borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:600,color:"var(--ink)"}}>↑{onH}</div>}
+              </div>
+              <div style={{padding:"12px 14px"}}>
+                <div className="ff" style={{fontWeight:700,fontSize:13,color:"var(--tx)",marginBottom:2,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",minHeight:34}}>{p.name}</div>
+                <div style={{fontSize:11,color:"var(--tx3)"}}>{som(p.price)} · {som(qty*p.price)} всего</div>
+              </div>
+            </div>})}
+        </div>
+        :<div className="card" style={{padding:0,overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{background:"var(--bg)"}}>{["","Название","Артикул","Категория","Цена","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+            <tbody>{filtered.map((p,i)=>{const qty=stock[p.id]||0;const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{icon:"📦",color:"#6366F1"};
+              return<tr key={p.id} onClick={()=>setSel(p)} style={{background:i%2?"var(--bg)":"var(--sur)",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background="var(--ink-l)"} onMouseLeave={e=>e.currentTarget.style.background=i%2?"var(--bg)":"var(--sur)"}>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><div style={{width:34,height:34,borderRadius:9,background:(cat.color||"#6366F1")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}>{cat.icon||"📦"}</div></td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontWeight:600}}>{p.name}</td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{p.sku||"—"}</td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><span style={{background:(cat.color||"#6366F1")+"18",color:cat.color||"#6366F1",padding:"2px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>{cat.name||"—"}</span></td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",color:"var(--tx2)"}}>{som(p.price)}</td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><span className="ff" style={{fontWeight:700,fontSize:16,color:qty===0?"var(--rd)":qty<5?"var(--am)":"var(--tx)"}}>{qty}</span></td>
+                <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontWeight:500}}>{som(qty*p.price)}</td>
+              </tr>})}
+            </tbody>
+          </table>
+        </div>}
+    </div>
+    {sel&&<ItemModal p={sel} stock={stock} S={S} checkouts={checkouts} onClose={()=>setSel(null)}/>}
+  </div>
+}
 
-      return (
-        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#1f2937",marginBottom:12}}>Филиалы — кто что взял</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {visibleBranches.map(b=>{
-                const cnt=activeCheckouts.filter(c=>c.branchId===b.id).reduce((a,c)=>a+c.remaining,0);
-                return (
-                  <button key={b.id} onClick={()=>setSel(b.id)} style={{padding:"8px 18px",borderRadius:10,border:"1px solid",fontSize:13,cursor:"pointer",fontWeight:600,background:sel===b.id?"#1a1d2e":"white",borderColor:sel===b.id?"#1a1d2e":"#e5e7eb",color:sel===b.id?"white":"#374151",display:"flex",alignItems:"center",gap:8}}>
-                    {b.name} <span style={{fontSize:10,opacity:0.7}}>· {b.city}</span>
-                    {cnt>0&&<span style={{background:sel===b.id?"#3b82f6":"#dbeafe",color:sel===b.id?"white":"#1d4ed8",borderRadius:10,padding:"0 7px",fontSize:11,fontWeight:700}}>{cnt}</span>}
-                  </button>
-                );
-              })}
+function ItemModal({p,stock,S,checkouts,onClose}){
+  const qty=stock[p.id]||0;const onH=checkouts.filter(c=>c.product_id===p.id);const hist=S.movements.filter(m=>m.product_id===p.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
+  const[rqty,setRqty]=useState(1);const[tab,setTab]=useState("info");
+  const cat=S.categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{icon:"📦",color:"#6366F1"};
+  const[confirm,setConfirm]=useState(null);
+  const rName=id=>S.recipients.find(r=>r.id===id)?.name??"—";
+  const doAction=async(type,qty_,extra={})=>{
+    const{error}=await sb.from("movements").insert({type,product_id:p.id,qty:qty_,location_id:p.location_id,issuer_id:S.profile.id,date:TODAY,...extra});
+    if(error)S.toast("Ошибка","error");else S.toast(`${TL[type]} сохранена`);
+    setConfirm(null);
+  };
+  return<div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
+    {confirm&&<Confirm title={confirm.title} message={confirm.message} onOk={confirm.onOk} onCancel={()=>setConfirm(null)}/>}
+    <div style={{position:"absolute",inset:0,background:"rgba(26,24,20,.5)",backdropFilter:"blur(5px)"}}/>
+    <div className="scale-in" onClick={e=>e.stopPropagation()} style={{position:"relative",background:"var(--sur)",borderRadius:20,width:"100%",maxWidth:640,maxHeight:"90vh",overflow:"auto",boxShadow:"var(--sh3)",border:"1px solid var(--brd)"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"20px 24px 16px",borderBottom:"1px solid var(--brd)"}}>
+        <div>
+          <div className="ff" style={{fontWeight:700,fontSize:18}}>{p.name}</div>
+          <div style={{fontSize:12,color:"var(--tx3)",marginTop:3}}>{cat.icon} {cat.name||"—"} · {p.sku||"—"}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <span className="ff" style={{fontSize:30,fontWeight:800,color:qty===0?"var(--rd)":qty<5?"var(--am)":"var(--gr)",letterSpacing:"-.03em"}}>{qty}<span style={{fontSize:14,color:"var(--tx3)"}}> шт</span></span>
+          <button onClick={onClose} style={{padding:6,borderRadius:8,color:"var(--tx3)",cursor:"pointer",fontSize:18,lineHeight:1}} onMouseEnter={e=>e.target.style.background="var(--bg)"} onMouseLeave={e=>e.target.style.background="transparent"}>✕</button>
+        </div>
+      </div>
+      <div style={{padding:"16px 24px"}}>
+        <div style={{display:"flex",gap:3,padding:3,background:"var(--bg)",borderRadius:10,width:"fit-content",marginBottom:16}}>
+          {[["info","Информация"],["history",`История (${hist.length})`]].map(([t,l])=><button key={t} onClick={()=>setTab(t)} style={{padding:"6px 16px",borderRadius:8,border:"none",fontSize:12,fontWeight:tab===t?600:400,cursor:"pointer",background:tab===t?"var(--sur)":"transparent",color:tab===t?"var(--tx)":"var(--tx2)",boxShadow:tab===t?"var(--sh)":"none",transition:"all .12s"}}>{l}</button>)}
+        </div>
+
+        {tab==="info"&&<>
+          {onH.length>0&&<div style={{background:"var(--ink-l)",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--ink)",letterSpacing:".05em",textTransform:"uppercase",marginBottom:10}}>На руках — {onH.reduce((a,c)=>a+c.remaining,0)} шт</div>
+            {onH.map((c,i)=>{const isOD=c.due_date&&c.due_date<TODAY;const days=c.due_date?Math.floor((new Date()-new Date(c.due_date))/86400000):null;
+              return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:i<onH.length-1?"1px solid #D4D2F5":"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:12}}>{rName(c.recipient_id)[0]}</div>
+                  <div><div className="ff" style={{fontSize:13,fontWeight:600}}>{rName(c.recipient_id)}</div>{c.sz&&<div style={{fontSize:10,color:"var(--tx3)"}}>СЗ: {c.sz}</div>}</div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{c.remaining} шт</span>
+                  {isOD?<Badge color="red">+{days}д</Badge>:c.due_date?<Badge color="green">до {c.due_date}</Badge>:null}
+                  {S.can("move")&&<Btn v="success" size="sm" onClick={()=>setConfirm({title:"Оформить возврат?",message:`Возврат ${c.remaining} шт от ${rName(c.recipient_id)}`,onOk:()=>doAction("return",c.remaining,{recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее"})})}>Вернуть</Btn>}
+                </div>
+              </div>})}
+          </div>}
+
+          {S.can("move")&&<div style={{display:"flex",gap:8,alignItems:"center",padding:"14px 0",borderTop:"1px solid var(--brd)"}}>
+            <Btn v="success" onClick={()=>doAction("in",rqty,{supplier_id:p.supplier_id,notes:"Приход"})}>+ Приход</Btn>
+            <div style={{display:"flex",alignItems:"center",border:"1px solid var(--brd)",borderRadius:9,overflow:"hidden"}}>
+              <button onClick={()=>setRqty(Math.max(1,rqty-1))} style={{padding:"7px 11px",background:"var(--bg)",fontSize:16,color:"var(--tx2)",cursor:"pointer"}}>−</button>
+              <span className="ff" style={{padding:"7px 14px",fontSize:15,fontWeight:700,minWidth:40,textAlign:"center"}}>{rqty}</span>
+              <button onClick={()=>setRqty(rqty+1)} style={{padding:"7px 11px",background:"var(--bg)",fontSize:16,color:"var(--tx2)",cursor:"pointer"}}>+</button>
             </div>
+            <Btn v="danger" onClick={()=>setConfirm({title:"Подтвердить списание?",message:`Списать ${rqty} шт товара "${p.name}"`,onOk:()=>doAction("writeoff",rqty,{notes:"Списание"})})}>Списать</Btn>
+            <div style={{marginLeft:"auto"}}><Badge color="slate">Стоимость: {som(qty*p.price)}</Badge></div>
+          </div>}
+        </>}
+
+        {tab==="history"&&<div style={{maxHeight:300,overflow:"auto"}}>
+          {hist.length===0?<div style={{padding:32,textAlign:"center",color:"var(--tx3)"}}>Нет операций</div>:
+          hist.map((m,i)=><div key={m.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid var(--brd)"}}>
+            <TBadge type={m.type}/><span className="ff" style={{fontWeight:600}}>×{m.qty}</span>
+            {m.recipient_id&&<span style={{fontSize:12,color:"var(--tx2)"}}>{rName(m.recipient_id)}</span>}
+            {m.sz&&<Badge color="ink" size="xs">{m.sz}</Badge>}
+            <span style={{marginLeft:"auto",fontSize:11,color:"var(--tx3)",fontFamily:"monospace"}}>{(m.created_at||"").slice(0,10)}</span>
+          </div>)}
+        </div>}
+      </div>
+    </div>
+  </div>
+}
+
+/* ══ ACTIVITY VIEW ════════════════════════════════════════════════════ */
+function ActivityView({S,checkouts,overdue}){
+  const{movements,products,recipients,suppliers,branches,can,toast,profile}=S;
+  const[typeF,setTypeF]=useState("all");const[brF,setBrF]=useState("");const[search,setSrch]=useState("");const[sheet,setSheet]=useState(null);
+  const[dateFrom,setDF]=useState("");const[dateTo,setDT]=useState(TODAY);
+  const pName=id=>products.find(p=>p.id===id)?.name??"—";
+  const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
+  const brName=id=>branches.find(b=>b.id===id)?.name??"—";
+  const filtered=[...movements].filter(m=>{
+    if(typeF!=="all"&&m.type!==typeF)return false;
+    if(brF&&m.branch_id!=brF)return false;
+    const d=(m.date||m.created_at||"").slice(0,10);
+    if(dateFrom&&d<dateFrom)return false;
+    if(d>dateTo)return false;
+    if(search){const str=(pName(m.product_id)+(m.recipient_id?rName(m.recipient_id):"")+(m.purpose||"")+(m.sz||"")).toLowerCase();if(!str.includes(search.toLowerCase()))return false}
+    return true;
+  }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
+
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
+      {overdue.length>0&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",background:"var(--rd-l)",border:"1px solid #FECACA",borderRadius:10,marginBottom:12,fontSize:12,color:"var(--rd)",fontWeight:600}}>
+        ⚠ {overdue.length} выдач просрочено
+      </div>}
+      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
+        <span className="ff" style={{fontSize:17,fontWeight:700}}>Движения товаров</span>
+        {can("move")&&<div style={{marginLeft:"auto",display:"flex",gap:6}}>
+          {[{t:"out",l:"📤 Выдать"},{t:"return",l:"🔄 Возврат"},{t:"writeoff",l:"🗑 Списать"},{t:"in",l:"📥 Приход"}].map(op=><Btn key={op.t} size="sm" v={op.t==="out"?"primary":op.t==="in"?"success":"secondary"} onClick={()=>setSheet(op.t)}>{op.l}</Btn>)}
+        </div>}
+      </div>
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+        {["all","out","in","return","writeoff"].map(t=><button key={t} onClick={()=>setTypeF(t)} style={{padding:"5px 12px",borderRadius:999,border:`1px solid ${typeF===t?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:typeF===t?600:400,background:typeF===t?"var(--ink-l)":"var(--sur)",color:typeF===t?"var(--ink)":"var(--tx2)",cursor:"pointer",transition:"all .12s"}}>{t==="all"?"Все":TL[t]}</button>)}
+        <Sel value={brF} onChange={e=>setBrF(e.target.value)} style={{width:150,fontSize:12}}>
+          <option value="">Все филиалы</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+        </Sel>
+        <div style={{display:"flex",gap:6,marginLeft:"auto",alignItems:"center"}}>
+          <Inp type="date" value={dateFrom} onChange={e=>setDF(e.target.value)} style={{width:128,fontSize:11}}/><span style={{color:"var(--tx3)"}}>—</span>
+          <Inp type="date" value={dateTo} onChange={e=>setDT(e.target.value)} style={{width:128,fontSize:11}}/>
+          <Inp value={search} onChange={e=>setSrch(e.target.value)} placeholder="Поиск…" pfx="🔍" style={{width:170}}/>
+        </div>
+      </div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:18}}>
+      <div className="card" style={{padding:0,overflow:"hidden"}}>
+        <div style={{padding:"8px 16px",borderBottom:"1px solid var(--brd)",fontSize:11,color:"var(--tx3)"}}>Записей: {filtered.length}</div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{background:"var(--bg)"}}>{["Дата","Тип","Товар","Кол","Получатель","Поставщик","Филиал (Город)","СЗ","Цель"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <tbody>{filtered.map((m,i)=>{const br=branches.find(b=>b.id===m.branch_id);const sup=suppliers.find(s=>s.id===m.supplier_id);return<tr key={m.id} style={{background:i%2?"var(--bg)":"var(--sur)",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--ink-l)"} onMouseLeave={e=>e.currentTarget.style.background=i%2?"var(--bg)":"var(--sur)"}>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{(m.created_at||m.date||"").slice(0,10)}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><TBadge type={m.type}/></td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontWeight:500,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pName(m.product_id)}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><span className="ff" style={{fontWeight:700,color:"var(--tx2)"}}>×{m.qty}</span></td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",color:"var(--tx2)",fontSize:12}}>{m.recipient_id?rName(m.recipient_id):"—"}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",color:"var(--tx2)",fontSize:12}}>{sup?.name||"—"}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",color:"var(--tx2)",fontSize:12}}>{br?`${br.name}${br.city?` (${br.city})`:""}`:"—"}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontSize:11,color:"var(--ink)",fontWeight:500}}>{m.sz||"—"}</td>
+            <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontSize:12,color:"var(--tx3)",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.purpose||m.notes||"—"}</td>
+          </tr>})}
+          {filtered.length===0&&<tr><td colSpan={9} style={{padding:32,textAlign:"center",color:"var(--tx3)"}}>Нет операций</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <Sheet open={!!sheet} onClose={()=>setSheet(null)} title={sheet?TL[sheet]:""} dirty={false}>
+      {sheet&&<OpForm type={sheet} onSave={()=>{setSheet(null);toast(`${TL[sheet]} сохранена`)}} onCancel={()=>setSheet(null)} S={{...S,stock:{}}}/>}
+    </Sheet>
+  </div>
+}
+
+/* ══ BRANCHES VIEW ════════════════════════════════════════════════════ */
+function BranchesView({S,stock,checkouts}){
+  const{branches,products,recipients,toast,profile}=S;
+  const[sel,setSel]=useState(branches[0]?.id||null);
+  const[confirm,setConfirm]=useState(null);
+  useEffect(()=>{if(!sel&&branches.length)setSel(branches[0].id)},[branches]);
+  const branch=branches.find(b=>b.id===sel);
+  const bOuts=checkouts.filter(c=>c.branch_id===sel);
+  const byRec={};bOuts.forEach(c=>{if(!byRec[c.recipient_id])byRec[c.recipient_id]=[];byRec[c.recipient_id].push(c)});
+  const tQ=bOuts.reduce((a,c)=>a+c.remaining,0);const tV=bOuts.reduce((a,c)=>a+(products.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0);
+  const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
+  const pName=id=>products.find(p=>p.id===id)?.name??"—";
+  const doReturn=async(c)=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее",date:TODAY});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
+
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    {confirm&&<Confirm title="Оформить возврат?" message={`Возврат ${confirm.remaining} шт "${pName(confirm.product_id)}" от ${rName(confirm.recipient_id)}`} onOk={()=>doReturn(confirm)} onCancel={()=>setConfirm(null)}/>}
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
+      <span className="ff" style={{fontSize:17,fontWeight:700,display:"block",marginBottom:12}}>Кто что взял — по филиалам</span>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{branches.map(b=>{const cnt=checkouts.filter(c=>c.branch_id===b.id).reduce((a,c)=>a+c.remaining,0);const act=sel===b.id;return<button key={b.id} onClick={()=>setSel(b.id)} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 16px",borderRadius:10,border:`1px solid ${act?"var(--ink)":"var(--brd)"}`,background:act?"var(--ink-l)":"var(--sur)",color:act?"var(--ink)":"var(--tx)",fontSize:13,fontWeight:act?600:400,cursor:"pointer",transition:"all .12s"}}>
+      <span style={{width:6,height:6,borderRadius:"50%",background:cnt>0?"var(--ink)":"var(--brd)"}}/>{b.name}{cnt>0&&<Badge color={act?"ink":"slate"} size="xs">{cnt}</Badge>}
+    </button>})}</div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:20}}>
+      {branch&&<div className="card" style={{marginBottom:14,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div className="ff" style={{fontWeight:700,fontSize:15}}>{branch.name}, {branch.city}</div>
+          {branch.head&&<div style={{fontSize:12,color:"var(--tx2)",marginTop:2}}>Руководитель: {branch.head}</div>}
+        </div>
+        <div style={{display:"flex",gap:8}}><Badge color="ink">{tQ} шт на руках</Badge><Badge color="green">{som(tV)}</Badge></div>
+      </div>}
+
+      {bOuts.length===0?<div style={{padding:60,textAlign:"center",color:"var(--tx3)"}}><div className="ff" style={{fontSize:40,marginBottom:10}}>✓</div><div className="ff" style={{fontSize:17,fontWeight:600,color:"var(--tx2)"}}>Нет активных выдач</div></div>:
+      Object.entries(byRec).map(([rid,items])=>{const pQ=items.reduce((a,c)=>a+c.remaining,0);const pV=items.reduce((a,c)=>a+(products.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0);return<div key={rid} className="card" style={{marginBottom:14,padding:0,overflow:"hidden"}}>
+        <div style={{padding:"12px 18px",borderBottom:"1px solid var(--brd)",background:"var(--bg)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:34,height:34,borderRadius:"50%",background:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14}}>{rName(Number(rid))[0]}</div>
+            <span className="ff" style={{fontWeight:700,fontSize:15}}>{rName(Number(rid))}</span>
           </div>
+          <div style={{display:"flex",gap:8}}><Badge color="ink">{pQ} шт</Badge><Badge color="green">{som(pV)}</Badge></div>
+        </div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{background:"var(--bg)"}}>{["Товар","Кол","Стоимость","Выдано","Вернуть до","СЗ","Статус",""].map(h=><th key={h} style={{padding:"8px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
+          <tbody>{items.map((c,i)=>{const isOD=c.due_date&&c.due_date<TODAY;const isSoon=c.due_date&&c.due_date>TODAY&&c.due_date<=IN3D;const days=c.due_date?Math.floor((new Date()-new Date(c.due_date))/86400000):null;const price=products.find(p=>p.id===c.product_id)?.price||0;return<tr key={i} style={{background:isOD?"#FFF5F5":isSoon?"#FFFBEB":i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
+            <td style={{padding:"10px 14px",fontWeight:500}}>{pName(c.product_id)}</td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{c.remaining}</span></td>
+            <td style={{padding:"10px 14px",fontSize:12}}>{som(c.remaining*price)}</td>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{(c.created_at||c.date||"").slice(0,10)}</td>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{c.due_date||"—"}</td>
+            <td style={{padding:"10px 14px",fontSize:11,color:"var(--ink)",fontWeight:500}}>{c.sz||"—"}</td>
+            <td style={{padding:"10px 14px"}}>{isOD?<Badge color="red">+{days}д</Badge>:isSoon?<Badge color="amber">Скоро</Badge>:<Badge color="green">В срок</Badge>}</td>
+            <td style={{padding:"10px 14px"}}><Btn v="ghost" size="sm" onClick={()=>setConfirm(c)}>Вернуть</Btn></td>
+          </tr>})}
+          </tbody>
+        </table>
+      </div>})}
+    </div>
+  </div>
+}
 
-          <div style={{flex:1,overflow:"auto",padding:20}}>
-            {selBranch&&(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
-                <div style={{width:40,height:40,borderRadius:10,background:"#1a1d2e",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>{selBranch.name.charAt(0)}</div>
-                <div>
-                  <div style={{fontWeight:700,fontSize:14}}>{selBranch.name}</div>
-                  <div style={{fontSize:11,color:"#6b7280"}}>{selBranch.city} · {selBranch.head}</div>
-                </div>
-                <div style={{marginLeft:"auto",fontSize:11,color:"#9ca3af"}}>
-                  Локаций: {locations.filter(l=>l.branchId===sel).length}
-                </div>
-              </div>
-            )}
+/* ══ RECIPIENTS VIEW ══════════════════════════════════════════════════ */
+function RecipientsView({S}){
+  const{recipients,branches,can,toast}=S;
+  const[form,setForm]=useState({name:"",branch_id:branches[0]?.id||"",sz_id:""});
+  const[loading,setL]=useState(false);
+  const addRec=async()=>{
+    if(!form.name.trim()){toast("Укажите имя","error");return}setL(true);
+    const{error}=await sb.from("recipients").insert({name:form.name,branch_id:Number(form.branch_id)||null,sz_id:form.sz_id||null});
+    if(error)toast("Ошибка: "+error.message,"error");else{toast("Получатель добавлен");setForm({name:"",branch_id:branches[0]?.id||"",sz_id:""})}
+    setL(false);
+  };
+  const removeRec=async id=>{const{error}=await sb.from("recipients").delete().eq("id",id);if(!error)toast("Удалён");else toast("Ошибка","error")};
 
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
-              {[
-                {v:totalQty,l:"единиц на руках",c:"#6366f1"},
-                {v:som(totalVal),l:"стоимость выданного",c:"#10b981"},
-                {v:Object.keys(byRec).length,l:"получателей",c:"#f59e0b"},
-              ].map((k,i)=>(
-                <div key={i} style={{background:"white",borderRadius:10,border:"1px solid #e5e7eb",padding:"14px 16px",borderTop:`3px solid ${k.c}`}}>
-                  <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
-                  <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{k.l}</div>
-                </div>
-              ))}
-            </div>
+  return<div style={{padding:20,height:"100%",overflow:"auto"}}>
+    <span className="ff" style={{fontSize:20,fontWeight:700,display:"block",marginBottom:18}}>Получатели</span>
+    {can("edit")&&<div className="card" style={{marginBottom:16,padding:"16px 18px"}}>
+      <span className="ff" style={{fontWeight:600,fontSize:14,display:"block",marginBottom:12}}>Добавить получателя</span>
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+        <Fld label="Имя"><Inp value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Полное имя"/></Fld>
+        <Fld label="Филиал"><Sel value={form.branch_id} onChange={e=>setForm({...form,branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
+        <Fld label="СЗ ID"><Inp value={form.sz_id} onChange={e=>setForm({...form,sz_id:e.target.value})} placeholder="СЗ-001"/></Fld>
+        <div style={{marginTop:20}}><Btn onClick={addRec} loading={loading}>+ Добавить</Btn></div>
+      </div>
+    </div>}
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      {recipients.length===0?<div style={{padding:24,textAlign:"center",color:"var(--tx3)"}}>Нет получателей</div>:
+      recipients.map((r,i)=><div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 18px",borderBottom:i<recipients.length-1?"1px solid var(--brd)":"none",background:i%2?"var(--bg)":"var(--sur)"}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:"var(--gr)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>{r.name[0]}</div>
+        <div style={{flex:1}}>
+          <div className="ff" style={{fontWeight:600,fontSize:13}}>{r.name}</div>
+          <div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ: ${r.sz_id}`:""}</div>
+        </div>
+        {can("edit")&&<Btn v="ghost" size="sm" onClick={()=>removeRec(r.id)}>Удалить</Btn>}
+      </div>)}
+    </div>
+  </div>
+}
 
-            {bOuts.length===0&&(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:40,textAlign:"center",color:"#9ca3af"}}>
-                <div style={{fontSize:32,marginBottom:8}}>✓</div>
-                <div style={{fontSize:14,fontWeight:600,color:"#374151"}}>Нет активных выдач</div>
-              </div>
-            )}
+/* ══ REPORTS VIEW ═════════════════════════════════════════════════════ */
+function ReportsView({S,stock}){
+  const{products,movements,categories,directions,productTypes,suppliers}=S;
+  const[tab,setTab]=useState("stock");
+  const rows=products.filter(p=>!p.archived).map(p=>{const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),retQ:movements.filter(m=>m.type==="return"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),wrtQ:movements.filter(m=>m.type==="writeoff"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0)}}).sort((a,b)=>b.outQ-a.outQ);
+  const tV=rows.reduce((a,r)=>a+r.val,0);
+  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Возврат,Списано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.retQ},${r.wrtQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
 
-            {Object.entries(byRec).map(([rid,items])=>{
-              const pQty=items.reduce((a,c)=>a+c.remaining,0);
-              const pVal=items.reduce((a,c)=>a+(products.find(p=>p.id===c.productId)?.price||0)*c.remaining,0);
-              return (
-                <div key={rid} style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",marginBottom:12,overflow:"hidden"}}>
-                  <div style={{padding:"12px 16px",borderBottom:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#f9fafb"}}>
-                    <div style={{fontWeight:700,fontSize:14,color:"#1f2937"}}>{gr(Number(rid))}</div>
-                    <div style={{display:"flex",gap:8}}>
-                      <span style={{background:"#eff6ff",color:"#2563eb",padding:"3px 10px",borderRadius:8,fontSize:12,fontWeight:700}}>{pQty} шт</span>
-                      <span style={{background:"#f0fdf4",color:"#16a34a",padding:"3px 10px",borderRadius:8,fontSize:12,fontWeight:700}}>{som(pVal)}</span>
-                    </div>
-                  </div>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                    <thead><tr style={{borderBottom:"1px solid #f3f4f6"}}>
-                      {["Товар","Кол-во","Стоимость","Выдано","Вернуть до","Статус","№ СЗ","Цель"].map(h=>(
-                        <th key={h} style={{padding:"8px 14px",textAlign:"left",fontSize:11,color:"#9ca3af",fontWeight:600}}>{h}</th>
-                      ))}
-                    </tr></thead>
-                    <tbody>
-                      {items.map((c,i)=>{
-                        const isOD=c.dueDate&&c.dueDate<TODAY;
-                        const days=c.dueDate?Math.floor((new Date()-new Date(c.dueDate))/86400000):null;
-                        const price=products.find(p=>p.id===c.productId)?.price||0;
-                        return (
-                          <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:isOD?"#fff8f8":"white"}}>
-                            <td style={{padding:"9px 14px",fontWeight:500,color:"#1f2937"}}>{gp(c.productId)}</td>
-                            <td style={{padding:"9px 14px",fontWeight:700,color:"#2563eb"}}>{c.remaining}</td>
-                            <td style={{padding:"9px 14px",fontSize:12,color:"#374151"}}>{som(c.remaining*price)}</td>
-                            <td style={{padding:"9px 14px",color:"#9ca3af",fontFamily:"monospace",fontSize:11}}>{c.date}</td>
-                            <td style={{padding:"9px 14px",color:"#9ca3af",fontFamily:"monospace",fontSize:11}}>{c.dueDate||"—"}</td>
-                            <td style={{padding:"9px 14px"}}>{isOD
-                              ?<span style={{background:"#fef2f2",color:"#dc2626",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:700}}>+{days} дн</span>
-                              :<span style={{background:"#f0fdf4",color:"#16a34a",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600}}>В срок</span>}
-                            </td>
-                            <td style={{padding:"9px 14px",color:"#6b7280",fontSize:11,fontFamily:"monospace"}}>{c.szDocumentNumber||"—"}</td>
-                            <td style={{padding:"9px 14px",color:"#9ca3af",fontSize:12}}>{c.purpose||"—"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+      <div><span className="ff" style={{fontSize:17,fontWeight:700}}>Отчёты</span></div>
+      <div style={{display:"flex",gap:8}}>
+        {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
+        <Btn v="success" size="sm" onClick={exportCSV}>↓ CSV</Btn>
+      </div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:20}}>
+      <div style={{background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Суммарная стоимость остатков</div><div className="ff" style={{fontSize:32,fontWeight:800,color:"white",letterSpacing:"-.03em"}}>{som(tV)}</div></div>
+        <div style={{display:"flex",gap:24}}>{[{l:"Позиций",v:rows.length},{l:"В наличии",v:rows.filter(r=>r.qty>0).length},{l:"Нет",v:rows.filter(r=>r.qty<=0).length}].map((k,i)=><div key={i} style={{textAlign:"center"}}><div className="ff" style={{fontSize:24,fontWeight:800,color:"white"}}>{k.v}</div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>{k.l}</div></div>)}</div>
+      </div>
+
+      {tab==="stock"&&<div className="card" style={{padding:0,overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Возврат","Списано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r,i)=><tr key={r.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:10,color:"var(--tx3)"}}>{r.sku||"—"}</td>
+            <td style={{padding:"10px 14px",fontWeight:600}}>{r.name}</td>
+            <td style={{padding:"10px 14px"}}><span style={{background:(r.cat.color||"#6366F1")+"18",color:r.cat.color||"#6366F1",padding:"2px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>{r.cat.icon} {r.cat.name}</span></td>
+            <td style={{padding:"10px 14px",color:"var(--tx2)"}}>{som(r.price)}</td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--gr)"}}>{r.inQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{r.outQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--pu)"}}>{r.retQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--rd)"}}>{r.wrtQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:800,fontSize:16,color:r.qty<=0?"var(--rd)":r.qty<5?"var(--am)":"var(--tx)"}}>{r.qty}</span></td>
+            <td style={{padding:"10px 14px",fontWeight:600}}>{som(r.val)}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+
+      {tab==="by_dir"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+        {directions.map(d=>{const prods=products.filter(p=>p.direction_id===d.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={d.id} className="card" style={{padding:"16px 18px"}}>
+          <div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{d.name}</div>
+          <div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div>
+          <div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div>
+        </div>})}
+      </div>}
+
+      {tab==="by_sup"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+        {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);const tIn=S.movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);return<div key={s.id} className="card" style={{padding:"18px 20px"}}>
+          <div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div>
+          <div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>{s.contact}</div>
+          <div style={{display:"flex",gap:8,marginBottom:4}}><Badge color="ink">{qty} шт в наличии</Badge><Badge color="green">{som(val)}</Badge></div>
+          <div style={{fontSize:11,color:"var(--tx3)"}}>{tIn} шт поставлено всего · {prods.length} позиций</div>
+        </div>})}
+      </div>}
+    </div>
+  </div>
+}
+
+/* ══ SUPPLIERS VIEW ═══════════════════════════════════════════════════ */
+function SuppliersView({S,stock}){
+  const{suppliers,products,movements}=S;
+  return<div style={{padding:24,height:"100%",overflow:"auto"}}>
+    <span className="ff" style={{fontSize:20,fontWeight:700,display:"block",marginBottom:18}}>Поставщики</span>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}}>
+      {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const tIn=movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);
+        return<div key={s.id} className="card" style={{padding:"18px 20px"}}>
+          <div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div>
+          <div style={{fontSize:12,color:"var(--tx2)",marginBottom:2}}>{s.contact}</div>
+          <div style={{fontSize:11,color:"var(--tx3)",fontFamily:"monospace",marginBottom:12}}>ИНН: {s.inn||"—"}</div>
+          <div style={{display:"flex",gap:10}}><Badge color="ink">{prods.length} товаров</Badge><Badge color="green">{tIn} шт поставлено</Badge></div>
+        </div>})}
+      {suppliers.length===0&&<div style={{padding:40,textAlign:"center",color:"var(--tx3)",gridColumn:"1/-1"}}>Нет поставщиков — добавьте в Справочниках</div>}
+    </div>
+  </div>
+}
+
+/* ══ USERS VIEW ═══════════════════════════════════════════════════════ */
+function UsersView({S}){
+  const{profiles,branches,can,toast}=S;
+  const[uf,setUf]=useState({email:"",pass:""});
+  const[loading,setL]=useState(false);
+  const addUser=async()=>{if(!uf.email||!uf.pass){toast("Заполните поля","error");return}setL(true);const{error}=await sb.auth.signUp({email:uf.email,password:uf.pass});if(error)toast("Ошибка: "+error.message,"error");else{toast("Создан. Назначьте роль через Supabase Dashboard");setUf({email:"",pass:""})}setL(false)};
+  const RC={admin:["var(--ink-l)","var(--ink)"],director:["var(--pu-l)","var(--pu)"],manager:["var(--gr-l)","var(--gr-m)"],employee:["var(--bg)","var(--tx2)"]};
+  return<div style={{padding:20,height:"100%",overflow:"auto"}}>
+    <span className="ff" style={{fontSize:20,fontWeight:700,display:"block",marginBottom:18}}>Пользователи</span>
+    {can("admin")&&<div className="card" style={{marginBottom:16,padding:"16px 18px"}}>
+      <span className="ff" style={{fontWeight:600,fontSize:14,display:"block",marginBottom:12}}>Создать пользователя</span>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,alignItems:"end"}}>
+        <Fld label="Email"><Inp value={uf.email} onChange={e=>setUf({...uf,email:e.target.value})} placeholder="user@bank.kg"/></Fld>
+        <Fld label="Пароль"><Inp type="password" value={uf.pass} onChange={e=>setUf({...uf,pass:e.target.value})}/></Fld>
+        <div style={{marginTop:20}}><Btn loading={loading} onClick={addUser}>Создать</Btn></div>
+      </div>
+      <div style={{marginTop:8,fontSize:11,color:"var(--am-m)"}}>⚠ Роль и филиал назначаются через Supabase Dashboard → Table Editor → profiles</div>
+    </div>}
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      {profiles.length===0?<div style={{padding:32,textAlign:"center",color:"var(--tx3)"}}>Нет профилей</div>:
+      profiles.map((u,i)=>{const[rbg,rc]=RC[u.role]||RC.employee;return<div key={u.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 18px",borderBottom:i<profiles.length-1?"1px solid var(--brd)":"none",background:i%2?"var(--bg)":"var(--sur)"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,var(--ink),var(--pu))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>{(u.name||u.email||"?")[0].toUpperCase()}</div>
+        <div style={{flex:1}}><div className="ff" style={{fontWeight:600,fontSize:13}}>{u.name||u.email}</div><div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===u.branch_id)?.name||"—"}</div></div>
+        <span style={{padding:"2px 10px",borderRadius:999,fontSize:11,fontWeight:600,background:rbg,color:rc}}>{ROLES[u.role]||u.role}</span>
+      </div>})}
+    </div>
+  </div>
+}
+
+/* ══ SETTINGS VIEW ════════════════════════════════════════════════════ */
+function SettingsView({S,refreshData}){
+  const[tab,setTab]=useState("categories");const{toast,can}=S;
+  let{branches,categories,productTypes:PT,locations,suppliers,directions}=S;
+  const[n,setN]=useState({cat:{name:"",color:"#4F4CEC",icon:"📦"},type:{name:""},loc:{name:"",branch_id:branches[0]?.id||""},sup:{name:"",contact:"",inn:""},dir:{name:""},br:{name:"",city:"",head:""}});
+  const upN=(k,v)=>setN(p=>({...p,[k]:{...p[k],...v}}));
+  const add=async(table,data,key)=>{if(!data.name?.trim())return;const{error}=await sb.from(table).insert(data);if(error)toast("Ошибка: "+error.message,"error");else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))}};
+  const del=async(table,id)=>{const{error}=await sb.from(table).delete().eq("id",id);if(error)toast("Ошибка — возможно запись используется","error");else{toast("Удалено");await refreshData()}};
+  const TABS=[{id:"categories",l:"Категории"},{id:"types",l:"Типы"},{id:"locations",l:"Места"},{id:"suppliers",l:"Поставщики"},{id:"directions",l:"Направления"},{id:"branches",l:"Филиалы"}];
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
+      <span className="ff" style={{fontSize:17,fontWeight:700,display:"block",marginBottom:12}}>Справочники</span>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===t.id?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",background:tab===t.id?"var(--ink-l)":"var(--sur)",color:tab===t.id?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{t.l}</button>)}</div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:18}}>
+      {tab==="categories"&&<>
+        <div className="card" style={{marginBottom:12,padding:"14px 18px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 70px 70px auto",gap:10,alignItems:"end"}}>
+            <Fld label="Название"><Inp value={n.cat.name} onChange={e=>upN("cat",{name:e.target.value})}/></Fld>
+            <Fld label="Цвет"><input type="color" value={n.cat.color} onChange={e=>upN("cat",{color:e.target.value})} style={{width:"100%",height:38,border:"1px solid var(--brd)",borderRadius:9,padding:3,cursor:"pointer"}}/></Fld>
+            <Fld label="Иконка"><Inp value={n.cat.icon} onChange={e=>upN("cat",{icon:e.target.value})}/></Fld>
+            <div style={{marginTop:20}}><Btn onClick={()=>add("categories",{name:n.cat.name,color:n.cat.color,icon:n.cat.icon},"cat")}>+</Btn></div>
           </div>
         </div>
-      );
-    }
-
-    // ====== ПОЛЬЗОВАТЕЛИ ======
-    function UsersView({users,setUsers,showToast,can,currentUser,branches}){
-      const [newUser,setNewUser]=useState({name:"",password:"",role:"employee",branchId:1});
-      const ROLE_COLORS={admin:["#fef3c7","#92400e"],director:["#ede9fe","#5b21b6"],manager:["#dbeafe","#1e40af"],employee:["#f0fdf4","#166534"]};
-      const addUser=()=>{
-        if(!newUser.name.trim()||!newUser.password.trim()){showToast("Заполните логин и пароль",false);return;}
-        if(users.some(u=>u.name===newUser.name)){showToast("Логин уже существует",false);return;}
-        const id=Math.max(0,...users.map(u=>u.id))+1;
-        setUsers(prev=>[...prev,{...newUser,id,branchId:Number(newUser.branchId)}]);
-        setNewUser({name:"",password:"",role:"employee",branchId:1});
-        showToast("Пользователь добавлен");
-      };
-      const removeUser=id=>{
-        if(id===currentUser.id){showToast("Нельзя удалить себя",false);return;}
-        setUsers(prev=>prev.filter(u=>u.id!==id));
-        showToast("Пользователь удалён");
-      };
-      return (
-        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#1f2937"}}>Пользователи системы</div>
-          </div>
-          <div style={{flex:1,overflow:"auto",padding:20}}>
-            {can("admin")&&(
-              <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:16,marginBottom:16}}>
-                <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>Добавить пользователя</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-                  <div><div style={LBL}>Логин</div><input value={newUser.name} onChange={e=>setNewUser({...newUser,name:e.target.value})} placeholder="Имя пользователя" style={INP}/></div>
-                  <div><div style={LBL}>Пароль</div><input value={newUser.password} onChange={e=>setNewUser({...newUser,password:e.target.value})} placeholder="Пароль" style={INP} type="password"/></div>
-                  <div><div style={LBL}>Роль</div><select value={newUser.role} onChange={e=>setNewUser({...newUser,role:e.target.value})} style={INP}>{Object.entries(ROLES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div>
-                  <div><div style={LBL}>Филиал</div><select value={newUser.branchId} onChange={e=>setNewUser({...newUser,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-                  <button onClick={addUser} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-                </div>
-              </div>
-            )}
-            <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
-              {users.map((u,i)=>(
-                <div key={u.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:i<users.length-1?"1px solid #f3f4f6":"none",background:i%2?"#fafafa":"white"}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:600,color:"#1f2937",fontSize:13}}>{u.name}{u.id===currentUser.id&&<span style={{marginLeft:8,fontSize:10,color:"#6366f1",fontWeight:700}}>ВЫ</span>}</div>
-                    <div style={{fontSize:11,color:"#9ca3af",marginTop:1}}>ID {u.id} · {branches.find(b=>b.id===u.branchId)?.name||"—"}</div>
-                  </div>
-                  <span style={{background:ROLE_COLORS[u.role]?.[0]||"#f3f4f6",color:ROLE_COLORS[u.role]?.[1]||"#374151",padding:"3px 10px",borderRadius:8,fontSize:11,fontWeight:600}}>{ROLES[u.role]}</span>
-                  {can("admin")&&u.id!==currentUser.id&&(
-                    <button onClick={()=>removeUser(u.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600}}>Удалить</button>
-                  )}
-                </div>
-              ))}
-            </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>{categories.map(c=><div key={c.id} className="card" style={{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:30,height:30,borderRadius:8,background:(c.color||"#6366F1")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{c.icon||"📦"}</div><span className="ff" style={{fontWeight:600,fontSize:13}}>{c.name}</span></div>
+          {can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("categories",c.id)}>✕</Btn>}
+        </div>)}</div>
+      </>}
+      {tab==="types"&&<>
+        <div className="card" style={{marginBottom:12,padding:"12px 18px",display:"flex",gap:10,alignItems:"end"}}>
+          <Fld label="Название типа продукта" style={{flex:1}}><Inp value={n.type.name} onChange={e=>upN("type",{name:e.target.value})} onKeyDown={e=>e.key==="Enter"&&add("product_types",{name:n.type.name},"type")}/></Fld>
+          <Btn style={{marginTop:20}} onClick={()=>add("product_types",{name:n.type.name},"type")}>+</Btn>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{PT.map(t=><div key={t.id} className="card" style={{padding:"7px 14px",borderRadius:999,display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+          <span className="ff" style={{fontWeight:500}}>{t.name}</span>{can("admin")&&<button onClick={()=>del("product_types",t.id)} style={{color:"var(--tx3)",cursor:"pointer",fontSize:14,lineHeight:1}}>✕</button>}
+        </div>)}</div>
+      </>}
+      {tab==="locations"&&<>
+        <div className="card" style={{marginBottom:12,padding:"14px 18px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr auto",gap:10,alignItems:"end"}}>
+            <Fld label="Название"><Inp value={n.loc.name} onChange={e=>upN("loc",{name:e.target.value})} placeholder="A1·П1"/></Fld>
+            <Fld label="Филиал"><Sel value={n.loc.branch_id} onChange={e=>upN("loc",{branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
+            <div style={{marginTop:20}}><Btn onClick={()=>add("locations",{name:n.loc.name,branch_id:Number(n.loc.branch_id)||null},"loc")}>+</Btn></div>
           </div>
         </div>
-      );
-    }
-
-    // ====== СПРАВОЧНИКИ ======
-    function SettingsView(props){
-      const [tab,setTab]=useState("categories");
-      const TABS = [
-        {id:"categories",label:"Категории",icon:"🏷️"},
-        {id:"types",label:"Типы продуктов",icon:"📋"},
-        {id:"locations",label:"Места хранения",icon:"📍"},
-        {id:"suppliers",label:"Поставщики",icon:"🚚"},
-        {id:"directions",label:"Направления",icon:"🎯"},
-        {id:"branches",label:"Филиалы",icon:"🏢"},
-        {id:"recipients",label:"Получатели",icon:"👤"},
-      ];
-      return (
-        <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-          <div style={{background:"white",borderBottom:"1px solid #e5e7eb",padding:"14px 20px",flexShrink:0}}>
-            <div style={{fontSize:16,fontWeight:700,color:"#1f2937",marginBottom:12}}>Справочники</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {TABS.map(t=>(
-                <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"7px 14px",borderRadius:8,border:"1px solid",fontSize:12,cursor:"pointer",fontWeight:600,background:tab===t.id?"#1a1d2e":"white",borderColor:tab===t.id?"#1a1d2e":"#e5e7eb",color:tab===t.id?"white":"#374151"}}>{t.icon} {t.label}</button>
-              ))}
-            </div>
-          </div>
-          <div style={{flex:1,overflow:"auto",padding:20}}>
-            {tab==="categories"&&<CategoriesTab {...props}/>}
-            {tab==="types"&&<ProductTypesTab {...props}/>}
-            {tab==="locations"&&<LocationsTab {...props}/>}
-            {tab==="suppliers"&&<SuppliersTab {...props}/>}
-            {tab==="directions"&&<DirectionsTab {...props}/>}
-            {tab==="branches"&&<BranchesTab {...props}/>}
-            {tab==="recipients"&&<RecipientsTab {...props}/>}
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Место","Филиал",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
+        <tbody>{locations.map((l,i)=><tr key={l.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{l.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{l.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{branches.find(b=>b.id===l.branch_id)?.name||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("locations",l.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+      </>}
+      {tab==="suppliers"&&<>
+        <div className="card" style={{marginBottom:12,padding:"14px 18px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <Fld label="Название"><Inp value={n.sup.name} onChange={e=>upN("sup",{name:e.target.value})}/></Fld>
+            <Fld label="Контакт"><Inp value={n.sup.contact} onChange={e=>upN("sup",{contact:e.target.value})} placeholder="+996..."/></Fld>
+            <Fld label="ИНН"><Inp value={n.sup.inn} onChange={e=>upN("sup",{inn:e.target.value})}/></Fld>
+            <div style={{marginTop:20}}><Btn onClick={()=>add("suppliers",{name:n.sup.name,contact:n.sup.contact,inn:n.sup.inn},"sup")}>+</Btn></div>
           </div>
         </div>
-      );
-    }
-
-    function SettingsCard({title,children}){
-      return (
-        <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",padding:16,marginBottom:16}}>
-          <div style={{fontWeight:600,fontSize:13,color:"#374151",marginBottom:12}}>{title}</div>
-          {children}
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Контакт","ИНН",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
+        <tbody>{suppliers.map((s,i)=><tr key={s.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{s.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{s.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{s.contact}</td><td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{s.inn||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("suppliers",s.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+      </>}
+      {tab==="directions"&&<>
+        <div className="card" style={{marginBottom:12,padding:"12px 18px",display:"flex",gap:10,alignItems:"end"}}>
+          <Fld label="Название направления" style={{flex:1}}><Inp value={n.dir.name} onChange={e=>upN("dir",{name:e.target.value})} onKeyDown={e=>e.key==="Enter"&&add("directions",{name:n.dir.name},"dir")}/></Fld>
+          <Btn style={{marginTop:20}} onClick={()=>add("directions",{name:n.dir.name},"dir")}>+</Btn>
         </div>
-      );
-    }
-    function SettingsList({items,renderRow,empty}){
-      return (
-        <div style={{background:"white",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
-          {items.length===0
-            ?<div style={{padding:30,textAlign:"center",color:"#9ca3af",fontSize:13}}>{empty||"Пусто"}</div>
-            :items.map((it,i)=>(
-              <div key={it.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:i<items.length-1?"1px solid #f3f4f6":"none",background:i%2?"#fafafa":"white"}}>
-                {renderRow(it)}
-              </div>
-            ))}
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{directions.map(d=><div key={d.id} className="card" style={{padding:"7px 14px",borderRadius:999,display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+          <span className="ff" style={{fontWeight:500}}>{d.name}</span>{can("admin")&&<button onClick={()=>del("directions",d.id)} style={{color:"var(--tx3)",cursor:"pointer",fontSize:14}}>✕</button>}
+        </div>)}</div>
+      </>}
+      {tab==="branches"&&<>
+        <div className="card" style={{marginBottom:12,padding:"14px 18px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <Fld label="Название"><Inp value={n.br.name} onChange={e=>upN("br",{name:e.target.value})}/></Fld>
+            <Fld label="Город"><Inp value={n.br.city} onChange={e=>upN("br",{city:e.target.value})}/></Fld>
+            <Fld label="Руководитель"><Inp value={n.br.head} onChange={e=>upN("br",{head:e.target.value})}/></Fld>
+            <div style={{marginTop:20}}><Btn onClick={()=>add("branches",{name:n.br.name,city:n.br.city,head:n.br.head},"br")}>+</Btn></div>
+          </div>
         </div>
-      );
-    }
-    const DelBtn = ({onClick}) => (
-      <button onClick={onClick} style={{background:"#fef2f2",color:"#dc2626",border:"1px solid #fecaca",padding:"5px 10px",borderRadius:7,fontSize:11,fontWeight:600}}>Удалить</button>
-    );
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Город","Руководитель",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
+        <tbody>{branches.map((b,i)=><tr key={b.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{b.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{b.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.city}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.head||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("branches",b.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+      </>}
+    </div>
+  </div>
+}
 
-    function CategoriesTab({customCategories,setCustomCategories,products,showToast,can}){
-      const ICONS = ["👕","✏️","⚡","🎒","📄","📦","🎁","🍕","🛍️","🎨","🔧","💼","📚","🚗","💎","🏆"];
-      const COLORS = ["#f97316","#3b82f6","#8b5cf6","#ec4899","#10b981","#64748b","#dc2626","#f59e0b","#06b6d4","#84cc16"];
-      const [form,setForm]=useState({name:"",color:"#6366f1",icon:"📦"});
-      const add=()=>{
-        if(!form.name.trim()){showToast("Введите название",false);return;}
-        if(customCategories.some(c=>c.id===form.name||c.name===form.name)){showToast("Уже существует",false);return;}
-        setCustomCategories(p=>[...p,{id:form.name,name:form.name,color:form.color,icon:form.icon}]);
-        setForm({name:"",color:"#6366f1",icon:"📦"});showToast("Категория добавлена");
-      };
-      const del=id=>{
-        if(products.some(p=>p.categoryId===id)){showToast("Категория используется",false);return;}
-        setCustomCategories(p=>p.filter(c=>c.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить категорию">
-          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto auto",gap:10,alignItems:"end"}}>
-            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Например: Сувениры" style={INP}/></div>
-            <div><div style={LBL}>Иконка</div>
-              <select value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} style={{...INP,width:60,fontSize:18,textAlign:"center"}}>
-                {ICONS.map(ic=><option key={ic} value={ic}>{ic}</option>)}
-              </select>
-            </div>
-            <div><div style={LBL}>Цвет</div>
-              <select value={form.color} onChange={e=>setForm({...form,color:e.target.value})} style={{...INP,background:form.color+"30",color:form.color,fontWeight:700}}>
-                {COLORS.map(c=><option key={c} value={c} style={{background:"white",color:c}}>{c}</option>)}
-              </select>
-            </div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={customCategories} empty="Категорий нет" renderRow={c=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:c.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{c.icon}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{c.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>Товаров: {products.filter(p=>p.categoryId===c.id).length}</div>
-            </div>
-            <span style={{background:c.color+"20",color:c.color,padding:"2px 10px",borderRadius:8,fontSize:11,fontWeight:600}}>{c.color}</span>
-            {can("admin")&&<DelBtn onClick={()=>del(c.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function ProductTypesTab({productTypes,setProductTypes,products,showToast,can}){
-      const [name,setName]=useState("");
-      const add=()=>{
-        if(!name.trim()){showToast("Введите название",false);return;}
-        const id="t"+(Math.max(0,...productTypes.map(p=>Number(p.id.replace("t",""))||0))+1);
-        setProductTypes(p=>[...p,{id,name}]);setName("");showToast("Тип добавлен");
-      };
-      const del=id=>{
-        if(products.some(p=>p.productTypeId===id)){showToast("Тип используется",false);return;}
-        setProductTypes(p=>p.filter(t=>t.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить тип продукта">
-          <div style={{display:"flex",gap:10,alignItems:"end"}}>
-            <div style={{flex:1}}><div style={LBL}>Название</div><input value={name} onChange={e=>setName(e.target.value)} placeholder="Например: Сумка" style={INP}/></div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={productTypes} empty="Типов нет" renderRow={t=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#3b82f6"}}>📋</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{t.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>ID {t.id} · Товаров: {products.filter(p=>p.productTypeId===t.id).length}</div>
-            </div>
-            {can("admin")&&<DelBtn onClick={()=>del(t.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function LocationsTab({locations,setLocations,branches,products,showToast,can}){
-      const [form,setForm]=useState({name:"",branchId:branches[0]?.id||1});
-      const add=()=>{
-        if(!form.name.trim()){showToast("Введите название",false);return;}
-        const id=Math.max(0,...locations.map(l=>l.id))+1;
-        setLocations(p=>[...p,{id,name:form.name,branchId:Number(form.branchId)}]);
-        setForm({name:"",branchId:branches[0]?.id||1});showToast("Место добавлено");
-      };
-      const del=id=>{
-        if(products.some(p=>p.locationId===id)){showToast("Место используется",false);return;}
-        setLocations(p=>p.filter(l=>l.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить место хранения">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="A1·П3" style={INP}/></div>
-            <div><div style={LBL}>Филиал</div><select value={form.branchId} onChange={e=>setForm({...form,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={locations} empty="Мест нет" renderRow={l=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#fef3c7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#92400e"}}>📍</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{l.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>{branches.find(b=>b.id===l.branchId)?.name||"—"} · Товаров: {products.filter(p=>p.locationId===l.id).length}</div>
-            </div>
-            {can("admin")&&<DelBtn onClick={()=>del(l.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function SuppliersTab({suppliers,setSuppliers,products,movements,showToast,can}){
-      const [form,setForm]=useState({name:"",contact:"",inn:""});
-      const add=()=>{
-        if(!form.name.trim()){showToast("Введите название",false);return;}
-        const id=Math.max(0,...suppliers.map(s=>s.id))+1;
-        setSuppliers(p=>[...p,{id,...form}]);
-        setForm({name:"",contact:"",inn:""});showToast("Поставщик добавлен");
-      };
-      const del=id=>{
-        if(products.some(p=>p.supplierId===id)||movements.some(m=>m.supplierId===id)){showToast("Поставщик используется",false);return;}
-        setSuppliers(p=>p.filter(s=>s.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить поставщика">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="ООО ..." style={INP}/></div>
-            <div><div style={LBL}>Контакт</div><input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="+996 ..." style={INP}/></div>
-            <div><div style={LBL}>ИНН</div><input value={form.inn} onChange={e=>setForm({...form,inn:e.target.value})} placeholder="14 цифр" style={INP}/></div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={suppliers} empty="Поставщиков нет" renderRow={s=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#ede9fe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#5b21b6"}}>🚚</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{s.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>{s.contact} {s.inn?`· ИНН ${s.inn}`:""}</div>
-            </div>
-            {can("admin")&&<DelBtn onClick={()=>del(s.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function DirectionsTab({directions,setDirections,products,showToast,can}){
-      const [name,setName]=useState("");
-      const add=()=>{
-        if(!name.trim()){showToast("Введите название",false);return;}
-        const id=Math.max(0,...directions.map(d=>d.id))+1;
-        setDirections(p=>[...p,{id,name}]);setName("");showToast("Направление добавлено");
-      };
-      const del=id=>{
-        if(products.some(p=>p.directionId===id)){showToast("Направление используется",false);return;}
-        setDirections(p=>p.filter(d=>d.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить направление">
-          <div style={{display:"flex",gap:10,alignItems:"end"}}>
-            <div style={{flex:1}}><div style={LBL}>Название</div><input value={name} onChange={e=>setName(e.target.value)} placeholder="Например: Маркетинг" style={INP}/></div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={directions} empty="Направлений нет" renderRow={d=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#f0fdf4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#166534"}}>🎯</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{d.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>Товаров: {products.filter(p=>p.directionId===d.id).length}</div>
-            </div>
-            {can("admin")&&<DelBtn onClick={()=>del(d.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function BranchesTab({branches,setBranches,locations,users,recipients,showToast,can}){
-      const [form,setForm]=useState({name:"",city:"",head:""});
-      const add=()=>{
-        if(!form.name.trim()){showToast("Введите название",false);return;}
-        const id=Math.max(0,...branches.map(b=>b.id))+1;
-        setBranches(p=>[...p,{id,...form}]);
-        setForm({name:"",city:"",head:""});showToast("Филиал добавлен");
-      };
-      const del=id=>{
-        if(locations.some(l=>l.branchId===id)||users.some(u=>u.branchId===id)||recipients.some(r=>r.branchId===id)){showToast("Филиал используется",false);return;}
-        setBranches(p=>p.filter(b=>b.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("admin")&&<SettingsCard title="Добавить филиал">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><div style={LBL}>Название</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Филиал X" style={INP}/></div>
-            <div><div style={LBL}>Город</div><input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} placeholder="Бишкек" style={INP}/></div>
-            <div><div style={LBL}>Руководитель</div><input value={form.head} onChange={e=>setForm({...form,head:e.target.value})} placeholder="ФИО" style={INP}/></div>
-            <button onClick={add} style={{background:"#6366f1",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={branches} empty="Филиалов нет" renderRow={b=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#dbeafe",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#1e40af"}}>🏢</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{b.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>{b.city} · {b.head} · Локаций: {locations.filter(l=>l.branchId===b.id).length}</div>
-            </div>
-            {can("admin")&&<DelBtn onClick={()=>del(b.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    function RecipientsTab({recipients,setRecipients,branches,movements,showToast,can}){
-      const [form,setForm]=useState({name:"",branchId:branches[0]?.id||1,szId:"",branchHead:""});
-      const add=()=>{
-        if(!form.name.trim()){showToast("Введите имя",false);return;}
-        const id=Math.max(0,...recipients.map(r=>r.id))+1;
-        setRecipients(p=>[...p,{id,...form,branchId:Number(form.branchId)}]);
-        setForm({name:"",branchId:branches[0]?.id||1,szId:"",branchHead:""});showToast("Получатель добавлен");
-      };
-      const del=id=>{
-        if(movements.some(m=>m.recipientId===id)){showToast("Получатель уже использовался",false);return;}
-        setRecipients(p=>p.filter(r=>r.id!==id));showToast("Удалено");
-      };
-      return <>
-        {can("edit")&&<SettingsCard title="Добавить получателя">
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><div style={LBL}>Имя</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="ФИО / отдел" style={INP}/></div>
-            <div><div style={LBL}>Филиал</div><select value={form.branchId} onChange={e=>setForm({...form,branchId:Number(e.target.value)})} style={INP}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-            <div><div style={LBL}>№ СЗ</div><input value={form.szId} onChange={e=>setForm({...form,szId:e.target.value})} placeholder="СЗ-..." style={INP}/></div>
-            <div><div style={LBL}>Руководитель</div><input value={form.branchHead} onChange={e=>setForm({...form,branchHead:e.target.value})} placeholder="ФИО" style={INP}/></div>
-            <button onClick={add} style={{background:"#10b981",color:"white",border:"none",padding:"8px 18px",borderRadius:8,fontSize:13,fontWeight:600}}>+ Добавить</button>
-          </div>
-        </SettingsCard>}
-        <SettingsList items={recipients} empty="Получателей нет" renderRow={r=>(
-          <>
-            <div style={{width:36,height:36,borderRadius:10,background:"#10b981",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"white",fontWeight:700}}>{r.name.charAt(0).toUpperCase()}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:13}}>{r.name}</div>
-              <div style={{fontSize:11,color:"#9ca3af"}}>{branches.find(b=>b.id===r.branchId)?.name||"—"} {r.szId?`· ${r.szId}`:""} {r.branchHead?`· ${r.branchHead}`:""}</div>
-            </div>
-            {can("edit")&&<DelBtn onClick={()=>del(r.id)}/>}
-          </>
-        )}/>
-      </>;
-    }
-
-    // ====== ГЛАВНЫЙ КОМПОНЕНТ ======
-    function App(){
-      const loadState = (key,def) => {try{const s=localStorage.getItem(key);return s?JSON.parse(s):def;}catch{return def;}};
-      const [users,setUsers] = useState(loadState("users",INIT_USERS));
-      const [currentUser,setCurrentUser] = useState(null);
-      const [customCategories,setCustomCategories] = useState(loadState("categories",DEFAULT_CATEGORIES));
-      const [productTypes,setProductTypes] = useState(loadState("productTypes",DEFAULT_PRODUCT_TYPES));
-      const [locations,setLocations] = useState(loadState("locations",INIT_LOCATIONS));
-      const [suppliers,setSuppliers] = useState(loadState("suppliers",INIT_SUPPLIERS));
-      const [directions,setDirections] = useState(loadState("directions",INIT_DIRECTIONS));
-      const [branches,setBranches] = useState(loadState("branches",INIT_BRANCHES));
-      const [products,setProducts] = useState(loadState("products",INIT_PRODUCTS));
-      const [movements,setMovements] = useState(loadState("movements",INIT_MOVEMENTS));
-      const [recipients,setRecipients] = useState(loadState("recipients",INIT_RECIPIENTS));
-      const [view,setView] = useState("items");
-      const [uid,setUid] = useState(loadState("uid",50));
-      const [toast,setToast] = useState(null);
-
-      useEffect(()=>{localStorage.setItem("users",JSON.stringify(users));},[users]);
-      useEffect(()=>{localStorage.setItem("categories",JSON.stringify(customCategories));},[customCategories]);
-      useEffect(()=>{localStorage.setItem("productTypes",JSON.stringify(productTypes));},[productTypes]);
-      useEffect(()=>{localStorage.setItem("locations",JSON.stringify(locations));},[locations]);
-      useEffect(()=>{localStorage.setItem("suppliers",JSON.stringify(suppliers));},[suppliers]);
-      useEffect(()=>{localStorage.setItem("directions",JSON.stringify(directions));},[directions]);
-      useEffect(()=>{localStorage.setItem("branches",JSON.stringify(branches));},[branches]);
-      useEffect(()=>{localStorage.setItem("products",JSON.stringify(products));},[products]);
-      useEffect(()=>{localStorage.setItem("movements",JSON.stringify(movements));},[movements]);
-      useEffect(()=>{localStorage.setItem("recipients",JSON.stringify(recipients));},[recipients]);
-      useEffect(()=>{localStorage.setItem("uid",JSON.stringify(uid));},[uid]);
-
-      const showToast = (msg,ok=true)=>{setToast({msg,ok});setTimeout(()=>setToast(null),2200);};
-      const stock = useMemo(()=>{const s={};movements.forEach(m=>{if(!s[m.productId])s[m.productId]=0;if(m.type==="in"||m.type==="return")s[m.productId]+=m.qty;else if(m.type==="out"||m.type==="writeoff")s[m.productId]-=m.qty;});return s;},[movements]);
-      const activeCheckouts = useMemo(()=>{const map={};movements.forEach(m=>{if(m.type==="out")map[m.id]={...m,remaining:m.qty};});movements.forEach(m=>{if(m.type==="return"){let left=m.qty;Object.values(map).filter(o=>o.productId===m.productId&&o.recipientId===m.recipientId&&o.remaining>0).sort((a,b)=>a.date.localeCompare(b.date)).forEach(o=>{if(left>0){const t=Math.min(left,o.remaining);o.remaining-=t;left-=t;}});}});return Object.values(map).filter(o=>o.remaining>0);},[movements]);
-      const overdue = useMemo(()=>activeCheckouts.filter(c=>c.dueDate&&c.dueDate<TODAY),[activeCheckouts]);
-      const addMov = mov=>{setMovements(p=>[...p,{...mov,id:uid}]);setUid(n=>n+1);};
-      const gp = id=>products.find(p=>p.id===id)?.name??"—";
-      const gr = id=>recipients.find(r=>r.id===id)?.name??"—";
-      const gb = id=>branches.find(b=>b.id===id)?.name??"—";
-      const can = a=>{if(!currentUser)return false;const r=currentUser.role;if(a==="admin")return r==="admin";if(a==="edit")return r==="admin"||r==="manager";if(a==="move")return r==="admin"||r==="manager";return true;};
-      const role = currentUser?.role;
-      const isRestricted = role && role!=="admin"&&role!=="director";
-      const userBranchId = currentUser?.branchId;
-
-      if(!currentUser) return <LoginScreen users={users} setCurrentUser={setCurrentUser} showToast={showToast} />;
-
-      const shared = {users,setUsers,products,setProducts,stock,movements,setMovements,activeCheckouts,overdue,addMov,can,gp,gr,gb,currentUser,recipients,setRecipients,showToast,customCategories,setCustomCategories,productTypes,setProductTypes,locations,setLocations,suppliers,setSuppliers,directions,setDirections,branches,setBranches,userBranchId,isRestricted};
-
-      const NAV = [
-        {id:"items",label:"Товары",icon:<IcoBox/>},
-        {id:"activity",label:"Движения",icon:<IcoActivity/>,badge:overdue.length},
-        {id:"branches",label:"Филиалы",icon:<IcoBranch/>},
-        {id:"users",label:"Пользователи",icon:<IcoUsers/>,adminOnly:true},
-        {id:"settings",label:"Справочники",icon:<IcoSettings/>,adminOnly:true},
-      ];
-
-      return (
-        <div style={{display:"flex",height:"100vh",background:"#f5f6fa",overflow:"hidden"}}>
-          <aside style={{width:220,background:"#1a1d2e",display:"flex",flexDirection:"column",flexShrink:0}}>
-            <div style={{padding:"20px 16px 16px",borderBottom:"1px solid #2a2d3e"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{width:32,height:32,background:"linear-gradient(135deg,#6366f1,#8b5cf6)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📦</div>
-                <div>
-                  <div style={{fontWeight:700,fontSize:14,color:"white"}}>МКТ·СКЛАД</div>
-                  <div style={{fontSize:10,color:"#4a5568"}}>v2.2</div>
-                </div>
-              </div>
-            </div>
-            <div style={{padding:"8px 8px",flex:1,overflowY:"auto"}}>
-              {NAV.map(item=>{
-                if(item.adminOnly&&!can("admin"))return null;
-                const active=view===item.id;
-                return <button key={item.id} onClick={()=>setView(item.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",marginBottom:2,background:active?"#2d3150":"transparent",border:"none",borderRadius:8,color:active?"white":"#6b7280",fontSize:13,textAlign:"left",fontWeight:active?600:400,cursor:"pointer"}}>
-                  <span style={{opacity:active?1:0.6,display:"flex"}}>{item.icon}</span>
-                  <span>{item.label}</span>
-                  {item.badge>0&&<span style={{marginLeft:"auto",background:"#ef4444",color:"white",borderRadius:10,padding:"1px 6px",fontSize:10,fontWeight:700}}>{item.badge}</span>}
-                </button>
-              })}
-            </div>
-            <div style={{padding:"12px 12px",borderTop:"1px solid #2a2d3e"}}>
-              <div style={{fontSize:12,color:"white",marginBottom:2,fontWeight:600}}>{currentUser.name}</div>
-              <div style={{fontSize:10,color:"#6b7280",marginBottom:8}}>{ROLES[role]} · {branches.find(b=>b.id===userBranchId)?.name||"—"}</div>
-              <button onClick={()=>setCurrentUser(null)} style={{background:"#2a2d3e",color:"white",border:"none",padding:"6px 12px",borderRadius:6,fontSize:11,width:"100%",fontWeight:600}}>Выйти</button>
-            </div>
-          </aside>
-          <div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
-            {view==="items"&&<ItemsView {...shared}/>}
-            {view==="activity"&&<ActivityView {...shared}/>}
-            {view==="branches"&&<BranchesView {...shared}/>}
-            {view==="users"&&<UsersView {...shared}/>}
-            {view==="settings"&&<SettingsView {...shared}/>}
-          </div>
-          {toast&&<div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:toast.ok?"#1a1d2e":"#dc2626",color:"white",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:600,boxShadow:"0 8px 24px rgba(0,0,0,0.2)",zIndex:1000,display:"flex",alignItems:"center",gap:8}}><span>{toast.ok?"✓":"✕"}</span>{toast.msg}</div>}
+/* ══ LOGIN ════════════════════════════════════════════════════════════ */
+function Login({onLogin}){
+  const[email,setE]=useState("");const[pass,setP]=useState("");const[err,setErr]=useState("");const[loading,setL]=useState(false);
+  const submit=async()=>{if(!email||!pass){setErr("Заполните поля");return}setL(true);setErr("");const{data,error}=await sb.auth.signInWithPassword({email,password:pass});if(error){setErr(error.message);setL(false);return}const{data:p,error:pe}=await sb.from("profiles").select("*").eq("id",data.user.id).single();if(pe||!p){setErr("Профиль не найден. Обратитесь к администратору.");setL(false);return}onLogin(p);setL(false)};
+  return<div style={{display:"flex",height:"100vh",background:"var(--bg)"}}>
+    <div style={{margin:"auto",width:"100%",maxWidth:380,padding:20}}>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <div style={{width:56,height:56,background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 16px"}}>📦</div>
+        <h1 className="ff" style={{fontSize:28,fontWeight:800,color:"var(--tx)",letterSpacing:"-.02em"}}>Учёт и Склад</h1>
+        <p style={{fontSize:13,color:"var(--tx3)",marginTop:5}}>Департамент маркетинга</p>
+      </div>
+      <div className="card" style={{padding:"28px 28px"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <Fld label="Email"><Inp value={email} onChange={e=>{setE(e.target.value);setErr("")}} placeholder="user@bank.kg" autoFocus onKeyDown={e=>e.key==="Enter"&&submit()}/></Fld>
+          <Fld label="Пароль"><Inp type="password" value={pass} onChange={e=>{setP(e.target.value);setErr("")}} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()}/></Fld>
+          {err&&<div style={{padding:"9px 12px",background:"var(--rd-l)",borderRadius:9,fontSize:12,color:"var(--rd)"}}>⚠ {err}</div>}
+          <Btn onClick={submit} loading={loading} size="lg" style={{borderRadius:10,marginTop:4}}>Войти в систему</Btn>
         </div>
-      );
-    }
+      </div>
+    </div>
+  </div>
+}
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+/* ══ APP ROOT ═════════════════════════════════════════════════════════ */
+function App(){
+  const[profile,setProfile]=useState(null);const[loading,setLoading]=useState(true);const[rtOn,setRtOn]=useState(false);
+  const{ts,toast}=useToast();const[view,setView]=useState("home");
+  const[data,setData]=useState({products:[],movements:[],branches:[],locations:[],suppliers:[],directions:[],categories:[],productTypes:[],recipients:[],profiles:[]});
+
+  useEffect(()=>{
+    sb.auth.getSession().then(({data:{session}})=>{if(session)loadProfile(session.user.id);else setLoading(false)});
+    const{data:{subscription}}=sb.auth.onAuthStateChange((_,s)=>{if(!s){setProfile(null);setLoading(false)}});
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  const loadProfile=async uid=>{const{data:p}=await sb.from("profiles").select("*").eq("id",uid).single();if(p)setProfile(p);setLoading(false)};
+
+  const loadRefData=useCallback(async()=>{
+    const tabs=["branches","locations","suppliers","directions","categories","product_types","recipients","profiles"];
+    const res=await Promise.all(tabs.map(t=>sb.from(t).select("*")));
+    const nd={};tabs.forEach((t,i)=>{nd[t==="product_types"?"productTypes":t]=res[i].data||[]});
+    setData(prev=>({...prev,...nd}));
+  },[]);
+
+  useEffect(()=>{loadRefData()},[]);
+
+  useEffect(()=>{
+    if(!profile)return;
+    const fetchAll=async()=>{
+      const[{data:pr},{data:mv}]=await Promise.all([sb.from("products").select("*").eq("archived",false),sb.from("movements").select("*").order("created_at",{ascending:false})]);
+      if(pr)setData(p=>({...p,products:pr}));if(mv)setData(p=>({...p,movements:mv}));
+    };
+    fetchAll();
+    const pCh=sb.channel("p-rt").on("postgres_changes",{event:"*",schema:"public",table:"products"},e=>{setData(prev=>{const ps=prev.products;if(e.eventType==="INSERT")return{...prev,products:[...ps,e.new]};if(e.eventType==="UPDATE")return{...prev,products:ps.map(x=>x.id===e.new.id?e.new:x)};if(e.eventType==="DELETE")return{...prev,products:ps.filter(x=>x.id!==e.old.id)};return prev})}).subscribe(s=>setRtOn(s==="SUBSCRIBED"));
+    const mCh=sb.channel("m-rt").on("postgres_changes",{event:"*",schema:"public",table:"movements"},e=>{setData(prev=>{const ms=prev.movements;if(e.eventType==="INSERT"){toast(`${TL[e.new.type]} зафиксирована`);return{...prev,movements:[e.new,...ms]}}if(e.eventType==="UPDATE")return{...prev,movements:ms.map(x=>x.id===e.new.id?e.new:x)};if(e.eventType==="DELETE")return{...prev,movements:ms.filter(x=>x.id!==e.old.id)};return prev})}).subscribe();
+    return()=>{sb.removeChannel(pCh);sb.removeChannel(mCh);setRtOn(false)};
+  },[profile]);
+
+  const stock=useStock(data.movements);const checkouts=useCheckouts(data.movements);
+  const overdue=useMemo(()=>checkouts.filter(c=>c.due_date&&c.due_date<TODAY),[checkouts]);
+  const can=useCallback(a=>{if(!profile)return false;const r=profile.role;if(a==="admin")return r==="admin";if(a==="edit")return r==="admin"||r==="manager";if(a==="move")return r==="admin"||r==="manager";return true},[profile]);
+
+  const S={...data,profile,can,toast};
+  const shared={S,stock,checkouts,overdue,setView};
+
+  if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}><Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span></div>;
+  if(!profile)return<><Login onLogin={p=>{setProfile(p);toast("Добро пожаловать!")}}/><Toasts ts={ts}/></>;
+
+  const NAV=[
+    {id:"home",l:"Главная"},{id:"items",l:"Товары"},{id:"activity",l:"Движения",badge:overdue.length},
+    {id:"branches",l:"Филиалы"},{id:"recipients",l:"Получатели"},
+    ...(can("admin")||can("director")?[{id:"reports",l:"Отчёты"},{id:"suppliers",l:"Поставщики"},{id:"settings",l:"Справочники"},{id:"users",l:"Пользователи"}]:[])
+  ];
+  // sidebar uses groups internally
+
+  const VIEWS={
+    home:       <Home       {...shared}/>,
+    items:      <ItemsView  {...shared}/>,
+    activity:   <ActivityView {...shared}/>,
+    branches:   <BranchesView {...shared}/>,
+    recipients: <RecipientsView {...shared}/>,
+    reports:    <ReportsView {...shared}/>,
+    suppliers:  <SuppliersView {...shared}/>,
+    settings:   <SettingsView {...shared} refreshData={loadRefData}/>,
+    users:      <UsersView  {...shared}/>,
+  };
+
+  return<div style={{display:"flex",height:"100vh",overflow:"hidden",background:"var(--bg)"}}>
+    <Sidebar view={view} setView={setView} profile={profile} rtOn={rtOn} overdueCount={overdue.length}
+      onLogout={async()=>{await sb.auth.signOut();setProfile(null);toast("До свидания!")}}/>
+    <main style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+      {VIEWS[view]||<div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Раздел недоступен</div>}
+    </main>
+    <Toasts ts={ts}/>
+  </div>
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
