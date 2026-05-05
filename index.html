@@ -21,8 +21,7 @@
   --pu:#7C3AED;--pu-l:#F5F3FF;
   --nav:#1A1814;--nav2:#2A2720;--nav3:#3A3730;--navm:#7A776D;
   --sh:0 1px 3px rgba(26,24,20,.06),0 1px 2px rgba(26,24,20,.04);
-  --sh2:0 4px 16px rgba(26,24,20,.08);
-  --sh3:0 20px 48px rgba(26,24,20,.14);
+  --sh2:0 4px 16px rgba(26,24,20,.08);--sh3:0 20px 48px rgba(26,24,20,.14);
   --r:14px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -34,7 +33,7 @@ button{cursor:pointer;border:none;background:none}
 input,select{outline:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:4px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
@@ -48,21 +47,21 @@ input,select{outline:none}
 <script type="text/babel">
 const {useState,useMemo,useEffect,useCallback,useRef} = React;
 
-/* ── SUPABASE ─────────────────────────────────────────────────────── */
+/* ── SUPABASE ─────────────────────────────────────────────────── */
 const SB_URL = "https://ffcbzsdpfgjrmljmxeni.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmY2J6c2RwZmdqcm1sam14ZW5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3NzgzNjcsImV4cCI6MjA5MzM1NDM2N30.O7oscWiD3Moza62nTFRIdQhcCvT3SH522yLoQB7Ayyw";
 const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-/* ── CONSTANTS ────────────────────────────────────────────────────── */
+/* ── CONSTANTS ────────────────────────────────────────────────── */
 const TODAY = new Date().toISOString().split("T")[0];
 const IN3D  = new Date(Date.now()+3*864e5).toISOString().split("T")[0];
 const ROLES = {admin:"Администратор",manager:"Маркетолог",employee:"Сотрудник",director:"Руководитель"};
 const TL = {in:"Приход",out:"Выдача",return:"Возврат",writeoff:"Списание"};
 const TC = {in:"#16A34A",out:"#4F4CEC",return:"#7C3AED",writeoff:"#DC2626"};
 const som = n => `${new Intl.NumberFormat("ru-RU").format(Math.round(n||0))} с`;
-const ONBOARD_KEY = "mkt_onboard_done_v1";
+const ONBOARD_KEY = "mkt_onboard_done_v2";
 
-/* ── HOOKS ────────────────────────────────────────────────────────── */
+/* ── HOOKS ────────────────────────────────────────────────────── */
 function useStock(mv){
   return useMemo(()=>{
     const s={};
@@ -100,7 +99,7 @@ function useToast(){
   return{ts,toast};
 }
 
-/* ── PRIMITIVES ───────────────────────────────────────────────────── */
+/* ── PRIMITIVES ───────────────────────────────────────────────── */
 const Spin=({s=16})=><span style={{display:"inline-block",width:s,height:s,border:"2px solid currentColor",borderTopColor:"transparent",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>;
 
 function Btn({children,onClick,v="primary",size="md",loading,disabled,icon,style:sx={}}){
@@ -145,7 +144,7 @@ function Badge({children,color="slate",size="sm"}){
 }
 const TBadge=({type})=>{const m={in:["green","Приход"],out:["ink","Выдача"],return:["purple","Возврат"],writeoff:["red","Списание"]};const[c,l]=m[type]||["slate","?"];return<Badge color={c}>{l}</Badge>};
 
-/* ── TOASTS ───────────────────────────────────────────────────────── */
+/* ── TOASTS ───────────────────────────────────────────────────── */
 function Toasts({ts}){
   return<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
     {ts.map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderRadius:12,fontSize:13,fontWeight:500,boxShadow:"var(--sh3)",background:t.type==="error"?"var(--rd)":t.type==="warn"?"var(--am-m)":"var(--nav)",color:"white",whiteSpace:"nowrap",animation:"fadeUp .2s ease"}}>
@@ -154,7 +153,7 @@ function Toasts({ts}){
   </div>
 }
 
-/* ── CONFIRM ──────────────────────────────────────────────────────── */
+/* ── CONFIRM ──────────────────────────────────────────────────── */
 function Confirm({title,message,onOk,onCancel}){
   return<div style={{position:"fixed",inset:0,zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onCancel}>
     <div style={{position:"absolute",inset:0,background:"rgba(26,24,20,.5)",backdropFilter:"blur(4px)"}}/>
@@ -169,7 +168,7 @@ function Confirm({title,message,onOk,onCancel}){
   </div>
 }
 
-/* ── BOTTOM SHEET ─────────────────────────────────────────────────── */
+/* ── BOTTOM SHEET ─────────────────────────────────────────────── */
 function Sheet({open,onClose,title,children,dirty}){
   const handleClose=()=>{
     if(dirty&&!window.confirm("Есть незаполненные данные. Закрыть?"))return;
@@ -186,7 +185,7 @@ function Sheet({open,onClose,title,children,dirty}){
   </div>
 }
 
-/* ── VOICE ────────────────────────────────────────────────────────── */
+/* ── VOICE ────────────────────────────────────────────────────── */
 function VoiceBtn({onResult,context}){
   const[on,setOn]=useState(false);const[ok,setOk]=useState(true);const ref=useRef(null);
   const hints={in:"Пример: 100 футболок от Поставщика 1",out:"Пример: выдай Айгерим 5 ручек на конференцию",return:"Пример: возврат от Бакыта 3 блокнота"};
@@ -206,7 +205,7 @@ function VoiceBtn({onResult,context}){
   </div>
 }
 
-/* ── WIZARD STEPS ─────────────────────────────────────────────────── */
+/* ── WIZARD STEPS ─────────────────────────────────────────────── */
 function WizardSteps({current,total}){
   return<div style={{display:"flex",gap:6,alignItems:"center",marginBottom:20}}>
     {Array.from({length:total}).map((_,i)=><React.Fragment key={i}>
@@ -218,7 +217,36 @@ function WizardSteps({current,total}){
   </div>
 }
 
-/* ── OP FORM ──────────────────────────────────────────────────────── */
+/* ── ONBOARDING ───────────────────────────────────────────────── */
+function Onboarding({role,onDone}){
+  const[step,setStep]=useState(0);
+  const isAdmin=role==="admin",isManager=role==="manager",isDirector=role==="director";
+  const steps=[
+    {ico:"📦",title:"Добро пожаловать в Учёт и Склад",sub:"Система учёта ТМЦ для маркетинга. Заменит Excel, работает в реальном времени.",cta:"Далее →"},
+    ...(isAdmin||isDirector?[{ico:"⚙️",title:"Настройка системы",sub:"Добавьте категории, типы продуктов, места хранения и поставщиков в Справочниках.",cta:"Далее →"}] : (isManager?[{ico:"📤",title:"Выдача и приём товаров",sub:"Вы можете принимать товары от поставщиков и выдавать их сотрудникам на мероприятия.",cta:"Далее →"}]:[{ico:"👁️",title:"Просмотр остатков",sub:"Вы видите все товары и движения своего филиала. Уведомления о просрочках помогут не терять имущество.",cta:"Далее →"}])),
+    {ico:"✅",title:"Всё готово к работе",sub:"Начните с добавления товаров, настройки справочников или оформления первой операции.",cta:"Начать работу"}
+  ];
+  const s=steps[step];
+  return<div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"rgba(26,24,20,.6)",backdropFilter:"blur(6px)"}}>
+    <div style={{background:"var(--sur)",borderRadius:24,width:"100%",maxWidth:560,boxShadow:"var(--sh3)",animation:"scaleIn .2s ease",overflow:"hidden"}}>
+      <div style={{height:3,background:"var(--brd)"}}><div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"var(--ink)",transition:"width .3s ease",borderRadius:999}}/></div>
+      <div style={{padding:"32px 36px 28px"}}>
+        <div style={{display:"flex",gap:6,marginBottom:28}}>{steps.map((_,i)=><div key={i} style={{height:4,flex:1,borderRadius:999,background:i<=step?"var(--ink)":"var(--brd)",transition:"background .3s"}}/>)}</div>
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:36,marginBottom:12}}>{s.ico}</div>
+          <h2 className="ff" style={{fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:8}}>{s.title}</h2>
+          <p style={{fontSize:14,color:"var(--tx2)",lineHeight:1.65}}>{s.sub}</p>
+        </div>
+      </div>
+      <div style={{padding:"0 36px 28px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <button onClick={onDone} style={{fontSize:13,color:"var(--tx3)",cursor:"pointer",background:"none",border:"none"}}>Пропустить</button>
+        <Btn onClick={()=>{if(step<steps.length-1)setStep(s=>s+1);else onDone()}} size="lg">{s.cta}</Btn>
+      </div>
+    </div>
+  </div>
+}
+
+/* ── OP FORM (исправлены ошибки) ──────────────────────────────── */
 function OpForm({type,prefill={},onSave,onCancel,S}){
   const{products,recipients,suppliers,directions,branches,profile,toast}=S;
   const t=type;
@@ -227,6 +255,8 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
   const[dirty,setDirty]=useState(false);
   const[loading,setL]=useState(false);
   const[confirm,setConfirm]=useState(false);
+  const[showNewRecipient,setShowNewRecipient]=useState(false);
+  const[newRecipient,setNewRecipient]=useState({name:"",branch_id:"",sz_id:""});
   const[form,setForm]=useState({
     product_id:prefill.product_id||"",qty:prefill.qty||1,
     recipient_id:prefill.recipient_id||"",branch_id:prefill.branch_id||"",
@@ -244,14 +274,26 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     const prod=products.find(p=>(p.name||"").toLowerCase().split(" ").some(w=>w.length>3&&low.includes(w)));
     const rec=recipients.find(r=>(r.name||"").toLowerCase().split(" ").some(w=>w.length>2&&low.includes(w)));
     const qm=low.match(/(\d+)/);
-    setForm(f=>({...f,...(prod?{product_id:prod.id}:{}),...(rec?{recipient_id:rec.id}:{}),...(qm?{qty:parseInt(qm[0])}:{})}));
+    if(!prod&&low.length>3){toast("Товар не найден. Добавьте его в каталог.","warn");}else if(prod){setForm(f=>({...f,product_id:prod.id}));}
+    if(!rec&&low.length>3){toast("Получатель не найден. Можно ввести вручную.","warn");}else if(rec){setForm(f=>({...f,recipient_id:rec.id}));}
+    if(qm)setForm(f=>({...f,qty:parseInt(qm[0])}));
     setDirty(true);
   },[products,recipients]);
+
+  const createRecipient=async()=>{
+    if(!newRecipient.name.trim()){toast("Введите имя","error");return}
+    const{data,error}=await sb.from("recipients").insert({name:newRecipient.name,branch_id:Number(newRecipient.branch_id)||null,sz_id:newRecipient.sz_id||null}).select().single();
+    if(error){toast("Ошибка: "+error.message,"error");return}
+    setForm(f=>({...f,recipient_id:data.id,branch_id:data.branch_id||f.branch_id}));
+    setShowNewRecipient(false);
+    setNewRecipient({name:"",branch_id:"",sz_id:""});
+    toast("Получатель создан");
+  };
 
   const doSave=async()=>{
     if(!form.product_id){toast("Выберите товар","error");return}
     setL(true);
-    const{error}=await sb.from("movements").insert({
+    const payload={
       type:t,product_id:Number(form.product_id),qty:Number(form.qty),
       location_id:selProd?.location_id||null,issuer_id:profile.id,
       recipient_id:Number(form.recipient_id)||null,
@@ -263,7 +305,8 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
       direction_id:form.direction_id?Number(form.direction_id):null,
       condition:t==="return"?form.condition:null,
       notes:form.notes||null
-    });
+    };
+    const{error}=await sb.from("movements").insert(payload);
     setL(false);
     if(error){toast("Ошибка: "+error.message,"error");return}
     onSave();
@@ -308,11 +351,25 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     </div>}
 
     {step===2&&(t==="out"||t==="return")&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <Fld label={t==="out"?"Получатель":"Возврат от"}><Sel value={form.recipient_id} onChange={e=>upd("recipient_id",e.target.value)}>
-        <option value="">— выбрать —</option>
-        {recipients.map(r=><option key={r.id} value={r.id}>{r.name} ({branches.find(b=>b.id===r.branch_id)?.name||"—"})</option>)}
-      </Sel></Fld>
-      <Fld label="Или выбрать филиал напрямую"><Sel value={form.branch_id} onChange={e=>upd("branch_id",e.target.value)}>
+      <Fld label={t==="out"?"Получатель":"Возврат от"}>
+        <div style={{display:"flex",gap:8}}>
+          <Sel value={form.recipient_id} onChange={e=>{if(e.target.value==="new"){setShowNewRecipient(true)}else{upd("recipient_id",e.target.value)}}} style={{flex:1}}>
+            <option value="">— выбрать —</option>
+            {recipients.map(r=><option key={r.id} value={r.id}>{r.name} ({branches.find(b=>b.id===r.branch_id)?.name||"—"})</option>)}
+            <option value="new">➕ Добавить получателя</option>
+          </Sel>
+        </div>
+      </Fld>
+      {showNewRecipient&&<div className="card" style={{padding:12,marginTop:8,background:"var(--bg)"}}>
+        <Fld label="Имя"><Inp value={newRecipient.name} onChange={e=>setNewRecipient({...newRecipient,name:e.target.value})} placeholder="Полное имя"/></Fld>
+        <Fld label="Филиал"><Sel value={newRecipient.branch_id} onChange={e=>setNewRecipient({...newRecipient,branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
+        <Fld label="Служебная записка # (опционально)"><Inp value={newRecipient.sz_id} onChange={e=>setNewRecipient({...newRecipient,sz_id:e.target.value})}/></Fld>
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <Btn onClick={createRecipient} size="sm">Сохранить</Btn>
+          <Btn v="secondary" size="sm" onClick={()=>setShowNewRecipient(false)}>Отмена</Btn>
+        </div>
+      </div>}
+      <Fld label="Укажите филиал"><Sel value={form.branch_id} onChange={e=>upd("branch_id",e.target.value)}>
         <option value="">— выбрать —</option>
         {branches.map(b=><option key={b.id} value={b.id}>{b.name} ({b.city})</option>)}
       </Sel></Fld>
@@ -340,7 +397,7 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     {step===3&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
       {t==="out"&&<>
         <Fld label="Цель / мероприятие"><Inp value={form.purpose} onChange={e=>upd("purpose",e.target.value)} placeholder="Конференция, выставка..."/></Fld>
-        <Fld label="Вернуть до"><Inp type="date" value={form.due_date} onChange={e=>upd("due_date",e.target.value)}/></Fld>
+        <Fld label="Вернуть до (опционально)"><Inp type="date" value={form.due_date} onChange={e=>upd("due_date",e.target.value)}/></Fld>
         <Fld label="Номер СЗ"><Inp value={form.sz} onChange={e=>upd("sz",e.target.value)} placeholder="СЗ-001"/></Fld>
         {directions.length>0&&<Fld label="Направление"><Sel value={form.direction_id} onChange={e=>upd("direction_id",e.target.value)}>
           <option value="">— не указано —</option>
@@ -365,320 +422,7 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
   </div>
 }
 
-/* ── ONBOARDING ───────────────────────────────────────────────────── */
-function Onboarding({role,onDone}){
-  const[step,setStep]=useState(0);
-  const isAdmin=role==="admin";
-  const isManager=role==="manager";
-  const steps=[
-    {
-      ico:"📦",
-      title:"Добро пожаловать в Учёт и Склад",
-      sub:"Система учёта ТМЦ для маркетологов банка. Заменяет Excel — работает в реальном времени для всех филиалов.",
-      features:[
-        {ico:"⚡",text:"Real-time: любое изменение видят все мгновенно"},
-        {ico:"🏢",text:"Данные разделены по филиалам и ролям"},
-        {ico:"📊",text:"Полная история каждого товара"},
-      ],
-      cta:"Познакомиться →"
-    },
-    isAdmin?{
-      ico:"⚙️",
-      title:"Настройка системы",
-      sub:"Как администратор вы можете управлять справочниками, пользователями и филиалами.",
-      flows:[
-        {ico:"📋",color:"var(--ink)",title:"Справочники",text:"Добавьте категории, типы продуктов, места и поставщиков."},
-        {ico:"👥",color:"var(--pu)",title:"Пользователи",text:"Создайте учётные записи для сотрудников."},
-        {ico:"🏢",color:"var(--gr)",title:"Филиалы",text:"Добавьте все филиалы банка."},
-      ],
-      cta:"Далее →"
-    }:isManager?{
-      ico:"📤",
-      title:"Выдача и приём",
-      sub:"Вы можете принимать товары от поставщиков и выдавать их сотрудникам.",
-      flows:[
-        {ico:"📥",color:"var(--gr)",title:"Принять товар",text:"Оформляйте приход от поставщика."},
-        {ico:"📤",color:"var(--ink)",title:"Выдать",text:"Выдавайте товары на мероприятия."},
-        {ico:"🔄",color:"var(--pu)",title:"Возврат",text:"Принимайте возврат от сотрудников."},
-      ],
-      cta:"Далее →"
-    }:{
-      ico:"👁️",
-      title:"Просмотр остатков",
-      sub:"Вы можете видеть все товары и движения своего филиала.",
-      features:[
-        {ico:"📊",text:"Смотрите остатки на складе"},
-        {ico:"📜",text:"Просматривайте историю движений"},
-        {ico:"🔍",text:"Ищите товары по названию или артикулу"},
-      ],
-      cta:"Далее →"
-    },
-    {
-      ico:"✅",
-      title:"Всё готово к работе",
-      sub:"Система уже подключена к базе данных. Начните работу прямо сейчас.",
-      cta:"Начать работу"
-    }
-  ];
-  const s=steps[step];
-  return<div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"rgba(26,24,20,.6)",backdropFilter:"blur(6px)"}}>
-    <div style={{background:"var(--sur)",borderRadius:24,width:"100%",maxWidth:560,boxShadow:"var(--sh3)",animation:"scaleIn .2s ease",overflow:"hidden"}}>
-      <div style={{height:3,background:"var(--brd)"}}>
-        <div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"var(--ink)",transition:"width .3s ease",borderRadius:999}}/>
-      </div>
-      <div style={{padding:"32px 36px 28px"}}>
-        <div style={{display:"flex",gap:6,marginBottom:28}}>
-          {steps.map((_,i)=><div key={i} style={{height:4,flex:1,borderRadius:999,background:i<=step?"var(--ink)":"var(--brd)",transition:"background .3s"}}/>)}
-        </div>
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:12}}>{s.ico}</div>
-          <h2 className="ff" style={{fontSize:22,fontWeight:700,color:"var(--tx)",letterSpacing:"-.02em",marginBottom:8}}>{s.title}</h2>
-          <p style={{fontSize:14,color:"var(--tx2)",lineHeight:1.65}}>{s.sub}</p>
-        </div>
-        {s.features&&<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:8}}>
-          {s.features.map((f,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"var(--bg)",borderRadius:10}}>
-            <span style={{fontSize:18,flexShrink:0}}>{f.ico}</span>
-            <span style={{fontSize:13,color:"var(--tx2)"}}>{f.text}</span>
-          </div>)}
-        </div>}
-        {s.flows&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:8}}>
-          {s.flows.map((f,i)=><div key={i} style={{padding:"14px 12px",background:"var(--bg)",borderRadius:12,textAlign:"center"}}>
-            <div style={{width:40,height:40,borderRadius:12,background:f.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,margin:"0 auto 8px"}}>{f.ico}</div>
-            <div className="ff" style={{fontWeight:600,fontSize:13,color:"var(--tx)",marginBottom:4}}>{f.title}</div>
-            <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.4}}>{f.text}</div>
-          </div>)}
-        </div>}
-      </div>
-      <div style={{padding:"0 36px 28px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <button onClick={onDone} style={{fontSize:13,color:"var(--tx3)",cursor:"pointer",background:"none",border:"none",padding:"4px 0"}}>Пропустить</button>
-        <Btn onClick={()=>{if(step<steps.length-1)setStep(s=>s+1);else onDone()}} size="lg">{s.cta}</Btn>
-      </div>
-    </div>
-  </div>
-}
-
-/* ── GETTING STARTED WIDGET ───────────────────────────────────────── */
-function GettingStarted({products,movements,recipients,onDismiss,setView}){
-  const done={
-    addProduct: products.length>0,
-    addRecipient: recipients.length>0,
-    firstIn: movements.some(m=>m.type==="in"),
-    firstOut: movements.some(m=>m.type==="out"),
-  };
-  const total=Object.values(done).length;
-  const completed=Object.values(done).filter(Boolean).length;
-  if(completed===total)return null;
-  const items=[
-    {key:"addProduct",ico:"📦",text:"Добавьте первый товар",btn:"Перейти →",view:"items"},
-    {key:"addRecipient",ico:"👤",text:"Добавьте получателей",btn:"Перейти →",view:"recipients"},
-    {key:"firstIn",ico:"📥",text:"Оформите первый приход",btn:"Перейти →",view:"activity"},
-    {key:"firstOut",ico:"📤",text:"Выдайте первый товар",btn:"Перейти →",view:"activity"},
-  ];
-  return<div style={{background:"var(--sur)",border:"1px solid var(--brd)",borderRadius:var_r,padding:"18px 20px",marginBottom:16,boxShadow:"var(--sh)"}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <span className="ff" style={{fontWeight:700,fontSize:14}}>Начало работы</span>
-        <span style={{fontSize:11,color:"var(--tx3)"}}>{completed}/{total} выполнено</span>
-      </div>
-      <button onClick={onDismiss} style={{fontSize:12,color:"var(--tx3)",cursor:"pointer"}}>Скрыть</button>
-    </div>
-    <div style={{height:4,background:"var(--brd)",borderRadius:999,marginBottom:14}}>
-      <div style={{height:"100%",width:`${(completed/total)*100}%`,background:"var(--gr)",borderRadius:999,transition:"width .4s ease"}}/>
-    </div>
-    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      {items.map(item=><div key={item.key} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:done[item.key]?"var(--gr-l)":"var(--bg)",borderRadius:10,opacity:done[item.key]?.65:1}}>
-        <div style={{width:28,height:28,borderRadius:"50%",background:done[item.key]?"var(--gr)":"var(--brd)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:done[item.key]?13:15,color:done[item.key]?"white":"var(--tx3)",flexShrink:0}}>
-          {done[item.key]?"✓":item.ico}
-        </div>
-        <span style={{flex:1,fontSize:13,color:done[item.key]?"var(--gr-m)":"var(--tx2)",fontWeight:done[item.key]?600:400}}>{item.text}</span>
-        {!done[item.key]&&<button onClick={()=>setView(item.view)} style={{fontSize:12,color:"var(--ink)",fontWeight:600,cursor:"pointer",background:"none",border:"none",whiteSpace:"nowrap"}}>{item.btn}</button>}
-      </div>)}
-    </div>
-  </div>
-}
-const var_r="14px";
-
-/* ── RT DOT ───────────────────────────────────────────────────────── */
-const RTDot=({on})=><div style={{display:"flex",alignItems:"center",gap:5}}>
-  <span style={{width:7,height:7,borderRadius:"50%",background:on?"var(--gr)":"var(--navm)",boxShadow:on?"0 0 0 3px var(--gr-l)":"none"}}/>
-  <span style={{fontSize:11,color:on?"var(--gr)":"var(--navm)",fontWeight:500}}>{on?"Live":"—"}</span>
-</div>;
-
-/* ── SIDEBAR ──────────────────────────────────────────────────────── */
-function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
-  const r=profile.role;
-  const NAV_MAIN=[
-    {id:"home",l:"Главная",ico:"⌂"},
-    {id:"items",l:"Товары",ico:"◻"},
-    {id:"activity",l:"Движения",ico:"↕",badge:overdueCount},
-    ...(r==="admin"||r==="director"||r==="manager"
-      ?[{id:"branches",l:"Филиалы",ico:"◎"},{id:"recipients",l:"Получатели",ico:"◉"}]:[]),
-  ];
-  const NAV_MGMT=[
-    ...(r==="admin"||r==="director"?[{id:"reports",l:"Отчёты",ico:"≡"},{id:"suppliers",l:"Поставщики",ico:"◈"}]:[]),
-    ...(r==="admin"?[{id:"settings",l:"Справочники",ico:"⚙"},{id:"users",l:"Пользователи",ico:"◉"}]:[]),
-  ];
-  const groups=[{items:NAV_MAIN},...(NAV_MGMT.length?[{label:"Управление",items:NAV_MGMT}]:[])];
-  return<aside style={{width:220,background:"var(--nav)",display:"flex",flexDirection:"column",flexShrink:0}}>
-    <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:36,height:36,background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>📦</div>
-        <div>
-          <div className="ff" style={{fontWeight:700,fontSize:15,color:"white"}}>Учёт и Склад</div>
-          <div style={{fontSize:10,color:"var(--navm)"}}>Маркетинг</div>
-        </div>
-      </div>
-    </div>
-    <nav style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
-      {groups.map((g,gi)=><div key={gi} style={{marginBottom:6}}>
-        {g.label&&<div style={{padding:"8px 10px 4px",fontSize:10,fontWeight:600,color:"var(--navm)",letterSpacing:".1em",textTransform:"uppercase"}}>{g.label}</div>}
-        {g.items.map(n=>{const act=view===n.id;return<button key={n.id} onClick={()=>setView(n.id)}
-          style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"8px 10px",marginBottom:1,borderRadius:9,background:act?"var(--nav3)":"transparent",color:act?"white":"var(--navm)",fontSize:13,fontWeight:act?600:400,textAlign:"left",cursor:"pointer",transition:"all .12s"}}
-          onMouseEnter={e=>{if(!act){e.currentTarget.style.background="var(--nav2)";e.currentTarget.style.color="white"}}}
-          onMouseLeave={e=>{if(!act){e.currentTarget.style.background="transparent";e.currentTarget.style.color="var(--navm)"}}}>
-          <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0,opacity:act?1:.7}}>{n.ico}</span>
-          <span style={{flex:1}}>{n.l}</span>
-          {n.badge>0&&<span style={{background:"var(--rd)",color:"white",borderRadius:999,padding:"1px 6px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
-        </button>})}
-      </div>)}
-    </nav>
-    <div style={{padding:"10px 10px",borderTop:"1px solid rgba(255,255,255,.06)"}}>
-      <RTDot on={rtOn}/>
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 4px",marginTop:8}}>
-        <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--ink),var(--pu))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:13,fontWeight:700,flexShrink:0}}>
-          {(profile.name||profile.email||"?")[0].toUpperCase()}
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div className="ff" style={{fontSize:12,color:"white",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile.name||profile.email}</div>
-          <div style={{fontSize:10,color:"var(--navm)"}}>{ROLES[profile.role]||profile.role}</div>
-        </div>
-        <button onClick={onLogout} title="Выйти" style={{padding:6,borderRadius:7,color:"var(--navm)",cursor:"pointer",fontSize:14,transition:"color .12s"}} onMouseEnter={e=>e.target.style.color="white"} onMouseLeave={e=>e.target.style.color="var(--navm)"}>⎋</button>
-      </div>
-    </div>
-  </aside>
-}
-
-/* ── HOME ─────────────────────────────────────────────────────────── */
-function Home({S,stock,checkouts,setView}){
-  const{products,movements,branches,recipients,profile,toast,can}=S;
-  const[sheet,setSheet]=useState(null);
-  const[showGS,setShowGS]=useState(!localStorage.getItem("mkt_gs_hidden"));
-  const active=products.filter(p=>!p.archived);
-  const totalQty=active.reduce((a,p)=>a+(stock[p.id]||0),0);
-  const totalVal=active.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
-  const overdue=checkouts.filter(c=>c.due_date&&c.due_date<TODAY);
-  const soon=checkouts.filter(c=>c.due_date&&c.due_date>TODAY&&c.due_date<=IN3D);
-  const lastOut=useMemo(()=>[...movements].filter(m=>m.type==="out"&&m.issuer_id===profile?.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""))[0],[movements,profile]);
-  const recent=[...movements].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
-  const lowStock=active.filter(p=>(stock[p.id]||0)<5);
-  const byBranch=branches.map(b=>{const os=checkouts.filter(c=>c.branch_id===b.id);return{...b,qty:os.reduce((a,c)=>a+c.remaining,0),val:os.reduce((a,c)=>a+(active.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0)}});
-  const morning=new Date().getHours()<12?"Доброе утро":new Date().getHours()<18?"Добрый день":"Добрый вечер";
-  const pName=id=>products.find(p=>p.id===id)?.name??"—";
-  const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
-  const hideGS=()=>{localStorage.setItem("mkt_gs_hidden","1");setShowGS(false)};
-
-  return<div style={{height:"100%",overflow:"auto",background:"var(--bg)"}}>
-    <div style={{padding:"28px 28px 24px",background:"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
-        <div>
-          <h1 className="ff" style={{fontSize:28,fontWeight:700,color:"var(--tx)",letterSpacing:"-.02em"}}>{morning}, {profile?.name||profile?.email?.split("@")[0]} 👋</h1>
-          <p style={{fontSize:13,color:"var(--tx3)",marginTop:4}}>{ROLES[profile?.role]} · {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}</p>
-        </div>
-        <Btn v="secondary" onClick={()=>setView("items")}>Все товары →</Btn>
-      </div>
-      {can("move")
-        ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
-          {[
-            {ico:"📥",type:"in",title:"Принять товар",sub:"Новая поставка от поставщика",accent:"var(--gr)"},
-            {ico:"📤",type:"out",title:lastOut?"Повторить выдачу":"Выдать товар",
-             sub:lastOut?`→ ${rName(lastOut.recipient_id)} · ${pName(lastOut.product_id)}`:"На мероприятие или акцию",
-             accent:"var(--ink)",tag:lastOut?"⟳ Повторить":null,
-             prefill:lastOut?{product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz}:{}},
-            {ico:"🔄",type:"return",title:"Принять возврат",sub:"Сотрудник вернул товар",accent:"var(--pu)"},
-          ].map(item=><ActionCard key={item.type} item={item} onOpen={()=>setSheet({type:item.type,prefill:item.prefill||{}})}/>)}
-        </div>
-        :null}
-    </div>
-
-    <div style={{padding:24}}>
-      {showGS&&<GettingStarted products={products} movements={movements} recipients={recipients} onDismiss={hideGS} setView={setView}/>}
-      {overdue.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FECACA",borderLeft:"4px solid var(--rd)",borderRadius:14,padding:"14px 18px",marginBottom:12,animation:"fadeUp .2s ease"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <span className="ff" style={{fontWeight:700,fontSize:15,color:"var(--rd)"}}>⚠ Просрочено {overdue.length} выдач</span>
-          <Btn v="ghost" size="sm" onClick={()=>setView("branches")}>Подробнее →</Btn>
-        </div>
-        {overdue.slice(0,3).map((c,i)=>{const days=Math.floor((new Date()-new Date(c.due_date))/864e5);return<div key={i} style={{fontSize:12,color:"var(--tx2)",display:"flex",gap:8,alignItems:"center",marginBottom:3}}>
-          <span style={{fontWeight:600}}>{rName(c.recipient_id)}</span><span>—</span><span>{pName(c.product_id)}</span><span>× {c.remaining} шт</span><Badge color="red">+{days}д</Badge>
-        </div>})}
-      </div>}
-      {soon.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FDE68A",borderLeft:"4px solid var(--am)",borderRadius:14,padding:"12px 18px",marginBottom:12}}>
-        <span className="ff" style={{fontWeight:600,fontSize:13,color:"var(--am)"}}>⏳ Истекают в ближайшие 3 дня: {soon.length}</span>
-        <div style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap"}}>
-          {soon.map((c,i)=><Badge key={i} color="amber">{rName(c.recipient_id)} · {pName(c.product_id)} до {c.due_date}</Badge>)}
-        </div>
-      </div>}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[{v:active.length,l:"Позиций товаров",c:"var(--ink)"},{v:`${totalQty} шт`,l:"Единиц на складе",c:"var(--gr)"},{v:som(totalVal),l:"Стоимость склада",c:"var(--pu)"},{v:overdue.length,l:"Просрочено выдач",c:overdue.length?"var(--rd)":"var(--gr)"}].map((k,i)=>
-          <div key={i} className="card" style={{padding:"16px 18px",borderTop:`3px solid ${k.c}`}}>
-            <div className="ff" style={{fontSize:24,fontWeight:800,color:k.c,letterSpacing:"-.02em"}}>{k.v}</div>
-            <div style={{fontSize:11,color:"var(--tx3)",marginTop:4}}>{k.l}</div>
-          </div>
-        )}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16}}>
-        <div className="card" style={{padding:0,overflow:"hidden"}}>
-          <div className="ff" style={{padding:"14px 18px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:15}}>Последние операции</div>
-          {recent.length===0
-            ?<div style={{padding:32,textAlign:"center",color:"var(--tx3)",fontSize:13}}>Нет операций</div>
-            :recent.map((m,i)=><div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 18px",borderBottom:i<recent.length-1?"1px solid var(--brd)":"none"}}>
-              <TBadge type={m.type}/>
-              <span style={{fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:13}}>{pName(m.product_id)}</span>
-              <span className="ff" style={{fontWeight:700,color:"var(--tx2)"}}>×{m.qty}</span>
-              <span style={{fontSize:11,color:"var(--tx3)"}}>{m.recipient_id?rName(m.recipient_id):"—"}</span>
-              <span style={{fontSize:10,color:"var(--tx3)",fontFamily:"monospace"}}>{(m.created_at||"").slice(0,10)}</span>
-            </div>)}
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {lowStock.length>0&&<div className="card" style={{padding:0,overflow:"hidden"}}>
-            <div style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span className="ff" style={{fontWeight:600,fontSize:14,color:"var(--am)"}}>📉 Заканчивается</span>
-              <Badge color="amber">{lowStock.length}</Badge>
-            </div>
-            {lowStock.slice(0,4).map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid var(--brd)",fontSize:13}}>
-              <span style={{fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:130}}>{p.name}</span>
-              <Badge color={(stock[p.id]||0)===0?"red":"amber"}>{stock[p.id]||0} шт</Badge>
-            </div>)}
-          </div>}
-          <div className="card" style={{padding:0,overflow:"hidden"}}>
-            <div className="ff" style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:14}}>По филиалам</div>
-            {byBranch.filter(b=>b.qty>0||branches.length<=4).map((b,i)=><div key={b.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<byBranch.length-1?"1px solid var(--brd)":"none"}}>
-              <div><div style={{fontWeight:500,fontSize:13}}>{b.name}</div><div style={{fontSize:10,color:"var(--tx3)"}}>{b.city}</div></div>
-              <div style={{textAlign:"right"}}>
-                <div className="ff" style={{fontWeight:700,fontSize:16,color:b.qty>0?"var(--ink)":"var(--tx3)"}}>{b.qty}</div>
-                <div style={{fontSize:10,color:"var(--tx3)"}}>{som(b.val)}</div>
-              </div>
-            </div>)}
-          </div>
-        </div>
-      </div>
-    </div>
-    <Sheet open={!!sheet} onClose={()=>setSheet(null)} title={sheet?TL[sheet.type]:""} dirty={false}>
-      {sheet&&<OpForm type={sheet.type} prefill={sheet.prefill} onSave={()=>{setSheet(null);toast(`${TL[sheet.type]} сохранена`)}} onCancel={()=>setSheet(null)} S={{...S,stock}}/>}
-    </Sheet>
-  </div>
-}
-
-function ActionCard({item,onOpen}){
-  const[h,sh]=useState(false);
-  return<button onClick={onOpen} onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)}
-    style={{textAlign:"left",padding:"22px",background:h?item.accent+"12":"var(--sur)",border:`1px solid ${h?item.accent:"var(--brd)"}`,borderRadius:16,cursor:"pointer",transition:"all .18s",boxShadow:h?"var(--sh2)":"var(--sh)",width:"100%",position:"relative"}}>
-    {item.tag&&<div style={{position:"absolute",top:12,right:12,background:item.accent,color:"white",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{item.tag}</div>}
-    <div style={{fontSize:30,marginBottom:12}}>{item.ico}</div>
-    <div className="ff" style={{fontWeight:700,fontSize:16,color:"var(--tx)",marginBottom:4}}>{item.title}</div>
-    <div style={{fontSize:12,color:"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.sub}</div>
-  </button>
-}
-
+/* ── ITEM CARD (с фото) ───────────────────────────────────────── */
 function ItemCard({p,stock,categories,checkouts,onClick}){
   const[h,sh]=useState(false);
   const qty=stock[p.id]||0;
@@ -686,8 +430,8 @@ function ItemCard({p,stock,categories,checkouts,onClick}){
   const onH=checkouts.filter(c=>c.product_id===p.id).reduce((a,c)=>a+c.remaining,0);
   return<div onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)} onClick={onClick}
     style={{background:"var(--sur)",borderRadius:16,border:`1px solid ${h?(cat.color||"var(--ink)")+"80":"var(--brd)"}`,overflow:"hidden",transition:"all .18s",boxShadow:h?"var(--sh2)":"var(--sh)",cursor:"pointer"}}>
-    <div style={{height:96,background:`linear-gradient(135deg,${cat.color||"#6366F1"}18,${cat.color||"#6366F1"}30)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-      <span style={{fontSize:36}}>{cat.icon||"📦"}</span>
+    <div style={{height:120,background:p.image_url?`url(${p.image_url}) center/cover`:`linear-gradient(135deg,${cat.color||"#6366F1"}18,${cat.color||"#6366F1"}30)`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+      {!p.image_url&&<span style={{fontSize:36}}>{cat.icon||"📦"}</span>}
       <div style={{position:"absolute",top:8,right:8,background:"var(--sur)",borderRadius:20,padding:"2px 8px",fontSize:11,fontWeight:700,color:qty===0?"var(--rd)":qty<5?"var(--am)":"var(--gr)",boxShadow:"var(--sh)"}}>{qty} шт</div>
       {onH>0&&<div style={{position:"absolute",top:8,left:8,background:"var(--ink-l)",borderRadius:20,padding:"2px 7px",fontSize:10,fontWeight:600,color:"var(--ink)"}}>↑{onH}</div>}
     </div>
@@ -698,15 +442,15 @@ function ItemCard({p,stock,categories,checkouts,onClick}){
   </div>
 }
 
-/* ── ITEMS VIEW ───────────────────────────────────────────────────── */
+/* ── ITEMS VIEW ───────────────────────────────────────────────── */
 function ItemsView({S,stock,checkouts}){
   const{products,categories,suppliers,directions,locations,productTypes,can,toast,isRestricted,userBranchId}=S;
   const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
   const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
   const visible=products.filter(p=>!p.archived&&(!isRestricted||locations.find(l=>l.id===p.location_id)?.branch_id===userBranchId));
   const filtered=visible.filter(p=>(catF==="all"||p.category_id===catF||p.category_id===catF)&&(!search||p.name?.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())));
-  const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:""});
-  const save=async()=>{if(!form.name.trim()){toast("Укажите название","error");return}setL(true);const{error}=await sb.from("products").insert({name:form.name,sku:form.sku||null,category_id:form.category_id||null,price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,supplier_id:form.supplier_id?Number(form.supplier_id):null,product_type_id:form.product_type_id||null,direction_id:form.direction_id?Number(form.direction_id):null,archived:false});if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}setL(false)};
+  const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:"",image_url:""});
+  const save=async()=>{if(!form.name.trim()){toast("Укажите название","error");return}setL(true);const{error}=await sb.from("products").insert({name:form.name,sku:form.sku||null,category_id:form.category_id||null,price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,supplier_id:form.supplier_id?Number(form.supplier_id):null,product_type_id:form.product_type_id||null,direction_id:form.direction_id?Number(form.direction_id):null,image_url:form.image_url||null,archived:false});if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}setL(false)};
 
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
@@ -739,6 +483,7 @@ function ItemsView({S,stock,checkouts}){
             <Fld label="Место"><Sel value={form.location_id} onChange={e=>setForm({...form,location_id:e.target.value})}><option value="">—</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</Sel></Fld>
             <Fld label="Поставщик"><Sel value={form.supplier_id} onChange={e=>setForm({...form,supplier_id:e.target.value})}><option value="">—</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Sel></Fld>
             <Fld label="Направление"><Sel value={form.direction_id} onChange={e=>setForm({...form,direction_id:e.target.value})}><option value="">—</option>{directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</Sel></Fld>
+            <Fld label="Ссылка на фото"><Inp value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})} placeholder="https://..."/></Fld>
           </div>
           <div style={{display:"flex",gap:8}}><Btn onClick={save} loading={loading}>Сохранить</Btn><Btn v="secondary" onClick={()=>setAdd(false)}>Отмена</Btn></div>
         </div>
@@ -776,15 +521,13 @@ function ItemsView({S,stock,checkouts}){
 }
 
 function ItemModal({p,stock,S,checkouts,onClose}){
-  const qty=stock[p.id]||0;
-  const onH=checkouts.filter(c=>c.product_id===p.id);
-  const hist=S.movements.filter(m=>m.product_id===p.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
+  const qty=stock[p.id]||0; const onH=checkouts.filter(c=>c.product_id===p.id); const hist=S.movements.filter(m=>m.product_id===p.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
   const[rqty,setRqty]=useState(1);const[tab,setTab]=useState("info");
   const cat=S.categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{icon:"📦",color:"#6366F1"};
   const[confirm,setConfirm]=useState(null);
   const rName=id=>S.recipients.find(r=>r.id===id)?.name??"—";
   const doAction=async(type,qty_,extra={})=>{
-    const{error}=await sb.from("movements").insert({type,product_id:p.id,qty:qty_,location_id:p.location_id,issuer_id:S.profile.id,...extra});
+    const{error}=await sb.from("movements").insert({type,product_id:p.id,qty:qty_,location_id:p.location_id,issuer_id:S.profile.id,date:TODAY,...extra});
     if(error)S.toast("Ошибка","error");else S.toast(`${TL[type]} сохранена`);setConfirm(null);
   };
   return<div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
@@ -846,7 +589,7 @@ function ItemModal({p,stock,S,checkouts,onClose}){
   </div>
 }
 
-/* ── ACTIVITY VIEW ────────────────────────────────────────────────── */
+/* ── ACTIVITY VIEW (исправлен фильтр по филиалу) ──────────────── */
 function ActivityView({S,checkouts,overdue}){
   const{movements,products,recipients,suppliers,branches,can,toast,profile,isRestricted,userBranchId}=S;
   const[typeF,setTypeF]=useState("all");const[brF,setBrF]=useState("");const[search,setSrch]=useState("");const[sheet,setSheet]=useState(null);
@@ -855,7 +598,7 @@ function ActivityView({S,checkouts,overdue}){
   const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
   const filtered=[...movements].filter(m=>{
     if(typeF!=="all"&&m.type!==typeF)return false;
-    if(isRestricted && m.branch_id !== userBranchId) return false;
+    if(isRestricted&&m.branch_id!==userBranchId)return false;
     if(brF&&m.branch_id!=brF)return false;
     const d=(m.created_at||"").slice(0,10);
     if(df&&d<df)return false;if(d>dt)return false;
@@ -912,7 +655,7 @@ function ActivityView({S,checkouts,overdue}){
   </div>
 }
 
-/* ── BRANCHES VIEW ────────────────────────────────────────────────── */
+/* ── BRANCHES VIEW ────────────────────────────────────────────── */
 function BranchesView({S,checkouts}){
   const{branches,products,recipients,toast,profile,isRestricted,userBranchId}=S;
   const vis=isRestricted?branches.filter(b=>b.id===userBranchId):branches;
@@ -925,7 +668,7 @@ function BranchesView({S,checkouts}){
   const tV=bOuts.reduce((a,c)=>a+(products.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0);
   const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
   const pName=id=>products.find(p=>p.id===id)?.name??"—";
-  const doReturn=async c=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее"});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
+  const doReturn=async c=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее",date:TODAY});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
 
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     {confirm&&<Confirm title="Оформить возврат?" message={`Возврат ${confirm.remaining} шт "${pName(confirm.product_id)}" от ${rName(confirm.recipient_id)}`} onOk={()=>doReturn(confirm)} onCancel={()=>setConfirm(null)}/>}
@@ -968,7 +711,7 @@ function BranchesView({S,checkouts}){
   </div>
 }
 
-/* ── RECIPIENTS VIEW ──────────────────────────────────────────────── */
+/* ── RECIPIENTS VIEW (исправлена ошибка sz_id) ───────────────── */
 function RecipientsView({S}){
   const{recipients,branches,can,toast}=S;
   const[form,setForm]=useState({name:"",branch_id:branches[0]?.id||"",sz_id:""});
@@ -980,65 +723,52 @@ function RecipientsView({S}){
     {can("edit")&&<div className="card" style={{marginBottom:16,padding:"16px 18px"}}>
       <span className="ff" style={{fontWeight:600,fontSize:14,display:"block",marginBottom:12}}>Добавить получателя</span>
       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-        <Fld label="Имя"><Inp value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Полное имя" autoFocus={false}/></Fld>
+        <Fld label="Имя"><Inp value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Полное имя"/></Fld>
         <Fld label="Филиал"><Sel value={form.branch_id} onChange={e=>setForm({...form,branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
-        <Fld label="Служебная записка #"><Inp value={form.sz_id} onChange={e=>setForm({...form,sz_id:e.target.value})} placeholder="опционально"/></Fld>
+        <Fld label="Служебная записка # (опционально)"><Inp value={form.sz_id} onChange={e=>setForm({...form,sz_id:e.target.value})} placeholder="СЗ-001"/></Fld>
         <div style={{marginTop:20}}><Btn onClick={add} loading={loading}>+ Добавить</Btn></div>
       </div>
     </div>}
     <div className="card" style={{padding:0,overflow:"hidden"}}>
       {recipients.length===0?<div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>
         <div style={{fontSize:32,marginBottom:10}}>👤</div>
-        <div className="ff" style={{fontSize:15,fontWeight:600,color:"var(--tx2)",marginBottom:4}}>Нет получателей</div>
-        <div style={{fontSize:13}}>Добавьте людей, которым выдаёте товары</div>
+        <div className="ff" style={{fontSize:15,fontWeight:600,color:"var(--tx2)"}}>Нет получателей</div>
       </div>:
       recipients.map((r,i)=><div key={r.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 18px",borderBottom:i<recipients.length-1?"1px solid var(--brd)":"none",background:i%2?"var(--bg)":"var(--sur)"}}>
         <div style={{width:34,height:34,borderRadius:"50%",background:"var(--gr)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>{r.name[0]}</div>
-        <div style={{flex:1}}>
-          <div className="ff" style={{fontWeight:600,fontSize:13}}>{r.name}</div>
-          <div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ #: ${r.sz_id}`:""}</div>
-        </div>
+        <div style={{flex:1}}><div className="ff" style={{fontWeight:600,fontSize:13}}>{r.name}</div><div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ: ${r.sz_id}`:""}</div></div>
         {can("edit")&&<Btn v="ghost" size="sm" onClick={()=>remove(r.id)}>Удалить</Btn>}
       </div>)}
     </div>
   </div>
 }
 
-/* ── REPORTS VIEW ─────────────────────────────────────────────────── */
+/* ── REPORTS VIEW ─────────────────────────────────────────────── */
 function ReportsView({S,stock}){
   const{products,movements,categories,directions,suppliers,branches}=S;
   const[tab,setTab]=useState("stock");
-  const[selBranchId,setSelBranchId]=useState("all");
-  const rows=products.filter(p=>!p.archived && (selBranchId==="all" || p.location_id && branches.find(b=>b.id===locations?.find(l=>l.id===p.location_id)?.branch_id)?.id == selBranchId)).map(p=>{
-    const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};
-    return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,
-      inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),
-      outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),
-    }
-  }).sort((a,b)=>b.outQ-a.outQ);
+  const[selBranch,setSelBranch]=useState("");
+  const byBranchData=useMemo(()=>{const map={};branches.forEach(b=>{map[b.id]={...b,qty:0,val:0}});products.filter(p=>!p.archived).forEach(p=>{const brId=locations?.find(l=>l.id===p.location_id)?.branch_id;if(brId&&map[brId]){map[brId].qty+=stock[p.id]||0;map[brId].val+=(stock[p.id]||0)*p.price}});return Object.values(map)},[products,stock,branches,locations]);
+  const rows=products.filter(p=>!p.archived&&(!selBranch||locations?.find(l=>l.id===p.location_id)?.branch_id==selBranch)).map(p=>{const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),retQ:movements.filter(m=>m.type==="return"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),wrtQ:movements.filter(m=>m.type==="writeoff"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0)}}).sort((a,b)=>b.outQ-a.outQ);
   const tV=rows.reduce((a,r)=>a+r.val,0);
-  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
-
+  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Возврат,Списано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.retQ},${r.wrtQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
       <span className="ff" style={{fontSize:17,fontWeight:700}}>Отчёты</span>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      <div style={{display:"flex",gap:8}}>
         {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"],["by_branch","По филиалам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
-        {tab==="stock"&&<Sel value={selBranchId} onChange={e=>setSelBranchId(e.target.value)} style={{width:160,fontSize:12}}>
-          <option value="all">Все филиалы</option>
-          {branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
-        </Sel>}
+        {tab==="stock"&&<Sel value={selBranch} onChange={e=>setSelBranch(e.target.value)} style={{width:160}}><option value="">Все филиалы</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel>}
         <Btn v="success" size="sm" onClick={exportCSV}>↓ CSV</Btn>
       </div>
     </div>
     <div style={{flex:1,overflow:"auto",padding:20}}>
       <div style={{background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Суммарная стоимость остатков</div><div className="ff" style={{fontSize:32,fontWeight:800,color:"white",letterSpacing:"-.03em"}}>{som(tV)}</div></div>
+        <div><div style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Стоимость остатков</div><div className="ff" style={{fontSize:32,fontWeight:800,color:"white"}}>{som(tV)}</div></div>
         <div style={{display:"flex",gap:24}}>{[{l:"Позиций",v:rows.length},{l:"В наличии",v:rows.filter(r=>r.qty>0).length},{l:"Нет",v:rows.filter(r=>r.qty<=0).length}].map((k,i)=><div key={i} style={{textAlign:"center"}}><div className="ff" style={{fontSize:24,fontWeight:800,color:"white"}}>{k.v}</div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>{k.l}</div></div>)}</div>
       </div>
       {tab==="stock"&&<div className="card" style={{padding:0,overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Возврат","Списано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>{rows.map((r,i)=><tr key={r.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
             <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:10,color:"var(--tx3)"}}>{r.sku||"—"}</td>
             <td style={{padding:"10px 14px",fontWeight:600}}>{r.name}</td>
@@ -1046,25 +776,27 @@ function ReportsView({S,stock}){
             <td style={{padding:"10px 14px",color:"var(--tx2)"}}>{som(r.price)}</td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--gr)"}}>{r.inQ}</span></td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{r.outQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--pu)"}}>{r.retQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--rd)"}}>{r.wrtQ}</span></td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:800,fontSize:16,color:r.qty<=0?"var(--rd)":r.qty<5?"var(--am)":"var(--tx)"}}>{r.qty}</span></td>
             <td style={{padding:"10px 14px",fontWeight:600}}>{som(r.val)}</td>
           </tr>)}</tbody>
         </table>
       </div>}
-      {tab==="by_branch"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
-        {branches.map(b=>{const prods=products.filter(p=>p.location_id&&branches.find(br=>br.id===locations?.find(l=>l.id===p.location_id)?.branch_id)?.id===b.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={b.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{b.name}{b.city?`, ${b.city}`:""}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
-      </div>}
       {tab==="by_dir"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
         {directions.map(d=>{const prods=products.filter(p=>p.direction_id===d.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={d.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{d.name}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
       </div>}
       {tab==="by_sup"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-        {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);const tIn=S.movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);return<div key={s.id} className="card" style={{padding:"18px 20px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div><div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>{s.contact}</div><div style={{display:"flex",gap:8,marginBottom:4}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:11,color:"var(--tx3)"}}>{tIn} шт поставлено · {prods.length} позиций</div></div>})}
+        {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);const tIn=movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);return<div key={s.id} className="card" style={{padding:"18px 20px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div><div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>{s.contact}</div><div style={{display:"flex",gap:8,marginBottom:4}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:11,color:"var(--tx3)"}}>{tIn} шт поставлено · {prods.length} позиций</div></div>})}
+      </div>}
+      {tab==="by_branch"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+        {byBranchData.map(b=><div key={b.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{b.name}{b.city?`, ${b.city}`:""}</div><div style={{display:"flex",gap:8}}><Badge color="ink">{b.qty} шт</Badge><Badge color="green">{som(b.val)}</Badge></div></div>)}
       </div>}
     </div>
   </div>
 }
 
-/* ── SUPPLIERS VIEW ───────────────────────────────────────────────── */
+/* ── SUPPLIERS VIEW ───────────────────────────────────────────── */
 function SuppliersView({S}){
   const{suppliers,products,movements}=S;
   return<div style={{padding:24,height:"100%",overflow:"auto"}}>
@@ -1076,24 +808,22 @@ function SuppliersView({S}){
   </div>
 }
 
-/* ── USERS VIEW ───────────────────────────────────────────────────── */
+/* ── USERS VIEW ───────────────────────────────────────────────── */
 function UsersView({S}){
   const{profiles,branches,can,toast}=S;
   const[uf,setUf]=useState({email:"",pass:""});const[loading,setL]=useState(false);
-  const add=async()=>{if(!uf.email||!uf.pass){toast("Заполните поля","error");return}setL(true);const{error}=await sb.auth.signUp({email:uf.email,password:uf.pass});if(error)toast("Ошибка: "+error.message,"error");else{toast("Создан. Назначьте роль через Supabase Dashboard → profiles");setUf({email:"",pass:""})}setL(false)};
+  const add=async()=>{if(!uf.email||!uf.pass){toast("Заполните поля","error");return}setL(true);const{error}=await sb.auth.signUp({email:uf.email,password:uf.pass});if(error)toast("Ошибка: "+error.message,"error");else{toast("Создан. Назначьте роль через Supabase Dashboard");setUf({email:"",pass:""})}setL(false)};
   const RC={admin:["var(--ink-l)","var(--ink)"],director:["var(--pu-l)","var(--pu)"],manager:["var(--gr-l)","var(--gr-m)"],employee:["var(--bg)","var(--tx2)"]};
   return<div style={{padding:20,height:"100%",overflow:"auto"}}>
     <span className="ff" style={{fontSize:20,fontWeight:700,display:"block",marginBottom:18}}>Пользователи</span>
     {can("admin")&&<div className="card" style={{marginBottom:16,padding:"16px 18px"}}>
-      <span className="ff" style={{fontWeight:600,fontSize:14,display:"block",marginBottom:12}}>Создать пользователя</span>
+      <div style={{fontWeight:600,marginBottom:12}}>Создать пользователя</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:10,alignItems:"end"}}>
         <Fld label="Email"><Inp value={uf.email} onChange={e=>setUf({...uf,email:e.target.value})} placeholder="user@bank.kg"/></Fld>
         <Fld label="Пароль"><Inp type="password" value={uf.pass} onChange={e=>setUf({...uf,pass:e.target.value})}/></Fld>
         <div style={{marginTop:20}}><Btn loading={loading} onClick={add}>Создать</Btn></div>
       </div>
-      <div style={{marginTop:8,fontSize:11,color:"var(--am-m)",padding:"8px 10px",background:"var(--am-l)",borderRadius:8}}>
-        ⚠ После создания назначьте роль и филиал: Supabase Dashboard → Table Editor → profiles
-      </div>
+      <div style={{marginTop:8,fontSize:11,color:"var(--am-m)",padding:"8px 10px",background:"var(--am-l)",borderRadius:8}}>⚠ Роль и филиал назначаются через Supabase Dashboard → Table Editor → profiles</div>
     </div>}
     <div className="card" style={{padding:0,overflow:"hidden"}}>
       {profiles.length===0?<div style={{padding:40,textAlign:"center",color:"var(--tx3)"}}>Нет профилей</div>:
@@ -1106,20 +836,18 @@ function UsersView({S}){
   </div>
 }
 
-/* ── SETTINGS VIEW ────────────────────────────────────────────────── */
+/* ── SETTINGS VIEW (исправлены id для categories и types) ────── */
 function SettingsView({S,refreshData}){
   const[tab,setTab]=useState("categories");const{toast,can,branches,categories,productTypes:PT,locations,suppliers,directions}=S;
   const[n,setN]=useState({cat:{name:"",color:"#4F4CEC",icon:"📦"},type:{name:""},loc:{name:"",branch_id:branches[0]?.id||""},sup:{name:"",contact:"",inn:""},dir:{name:""},br:{name:"",city:"",head:""}});
   const upN=(k,v)=>setN(p=>({...p,[k]:{...p[k],...v}}));
   const add=async(table,data,key)=>{
     if(!data.name?.trim())return;
-    const payload = { ...data };
-    if (table === 'categories' || table === 'product_types') {
-      payload.id = data.name.toLowerCase().replace(/\s+/g, '_');
-    }
+    const payload={...data};
+    if(table==="categories"||table==="product_types") payload.id=data.name.toLowerCase().replace(/\s+/g,"_");
     const{error}=await sb.from(table).insert(payload);
     if(error)toast("Ошибка: "+error.message,"error");
-    else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))};
+    else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))}
   };
   const del=async(table,id)=>{const{error}=await sb.from(table).delete().eq("id",id);if(error)toast("Ошибка — запись используется","error");else{toast("Удалено");await refreshData()}};
   const TABS=[{id:"categories",l:"Категории"},{id:"types",l:"Типы"},{id:"locations",l:"Места"},{id:"suppliers",l:"Поставщики"},{id:"directions",l:"Направления"},{id:"branches",l:"Филиалы"}];
@@ -1138,10 +866,7 @@ function SettingsView({S,refreshData}){
             <div style={{marginTop:20}}><Btn onClick={()=>add("categories",{name:n.cat.name,color:n.cat.color,icon:n.cat.icon},"cat")}>+</Btn></div>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>{categories.map(c=><div key={c.id} className="card" style={{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:30,height:30,borderRadius:8,background:(c.color||"#6366F1")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{c.icon||"📦"}</div><span className="ff" style={{fontWeight:600,fontSize:13}}>{c.name}</span></div>
-          {can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("categories",c.id)}>✕</Btn>}
-        </div>)}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>{categories.map(c=><div key={c.id} className="card" style={{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:30,height:30,borderRadius:8,background:(c.color||"#6366F1")+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>{c.icon||"📦"}</div><span className="ff" style={{fontWeight:600,fontSize:13}}>{c.name}</span></div>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("categories",c.id)}>✕</Btn>}</div>)}</div>
       </>}
       {tab==="types"&&<>
         <div className="card" style={{marginBottom:12,padding:"12px 18px",display:"flex",gap:10,alignItems:"end"}}>
@@ -1158,8 +883,7 @@ function SettingsView({S,refreshData}){
             <div style={{marginTop:20}}><Btn onClick={()=>add("locations",{name:n.loc.name,branch_id:Number(n.loc.branch_id)||null},"loc")}>+</Btn></div>
           </div>
         </div>
-        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Место","Филиал",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
-        <tbody>{locations.map((l,i)=><tr key={l.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{l.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{l.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{branches.find(b=>b.id===l.branch_id)?.name||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("locations",l.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Место","Филиал",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead><tbody>{locations.map((l,i)=><tr key={l.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{l.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{l.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{branches.find(b=>b.id===l.branch_id)?.name||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("locations",l.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
       </>}
       {tab==="suppliers"&&<>
         <div className="card" style={{marginBottom:12,padding:"14px 18px"}}>
@@ -1170,8 +894,7 @@ function SettingsView({S,refreshData}){
             <div style={{marginTop:20}}><Btn onClick={()=>add("suppliers",{name:n.sup.name,contact:n.sup.contact,inn:n.sup.inn},"sup")}>+</Btn></div>
           </div>
         </div>
-        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Контакт","ИНН",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
-        <tbody>{suppliers.map((s,i)=><tr key={s.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{s.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{s.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{s.contact}</td><td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{s.inn||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("suppliers",s.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Контакт","ИНН",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead><tbody>{suppliers.map((s,i)=><tr key={s.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{s.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{s.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{s.contact}</td><td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{s.inn||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("suppliers",s.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
       </>}
       {tab==="directions"&&<>
         <div className="card" style={{marginBottom:12,padding:"12px 18px",display:"flex",gap:10,alignItems:"end"}}>
@@ -1189,14 +912,13 @@ function SettingsView({S,refreshData}){
             <div style={{marginTop:20}}><Btn onClick={()=>add("branches",{name:n.br.name,city:n.br.city,head:n.br.head},"br")}>+</Btn></div>
           </div>
         </div>
-        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Город","Руководитель",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead>
-        <tbody>{branches.map((b,i)=><tr key={b.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{b.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{b.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.city}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.head||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("branches",b.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
+        <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr style={{background:"var(--bg)"}}>{["#","Название","Город","Руководитель",""].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)"}}>{h}</th>)}</tr></thead><tbody>{branches.map((b,i)=><tr key={b.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}><td style={{padding:"10px 14px",color:"var(--tx3)"}}>{b.id}</td><td style={{padding:"10px 14px",fontWeight:600}}>{b.name}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.city}</td><td style={{padding:"10px 14px",color:"var(--tx2)"}}>{b.head||"—"}</td><td style={{padding:"10px 14px"}}>{can("admin")&&<Btn v="ghost" size="sm" onClick={()=>del("branches",b.id)}>Удалить</Btn>}</td></tr>)}</tbody></table></div>
       </>}
     </div>
   </div>
 }
 
-/* ── LOGIN ────────────────────────────────────────────────────────── */
+/* ── LOGIN ────────────────────────────────────────────────────── */
 function Login({onLogin}){
   const[email,setE]=useState("");const[pass,setP]=useState("");const[err,setErr]=useState("");const[loading,setL]=useState(false);
   const submit=async()=>{
@@ -1216,12 +938,8 @@ function Login({onLogin}){
       </div>
       <div className="card" style={{padding:"28px 28px"}}>
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <Fld label="Email">
-            <Inp value={email} onChange={e=>{setE(e.target.value);setErr("")}} placeholder="user@bank.kg" autoFocus onKeyDown={e=>e.key==="Enter"&&submit()}/>
-          </Fld>
-          <Fld label="Пароль">
-            <Inp type="password" value={pass} onChange={e=>{setP(e.target.value);setErr("")}} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()}/>
-          </Fld>
+          <Fld label="Email"><Inp value={email} onChange={e=>{setE(e.target.value);setErr("")}} placeholder="user@bank.kg" autoFocus onKeyDown={e=>e.key==="Enter"&&submit()}/></Fld>
+          <Fld label="Пароль"><Inp type="password" value={pass} onChange={e=>{setP(e.target.value);setErr("")}} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&submit()}/></Fld>
           {err&&<div style={{padding:"9px 12px",background:"var(--rd-l)",borderRadius:9,fontSize:12,color:"var(--rd)",display:"flex",gap:8}}>⚠ {err}</div>}
           <Btn onClick={submit} loading={loading} size="lg" style={{borderRadius:10,marginTop:4}}>Войти в систему</Btn>
         </div>
@@ -1230,30 +948,163 @@ function Login({onLogin}){
   </div>
 }
 
-/* ── APP ROOT ─────────────────────────────────────────────────────── */
+/* ── SIDEBAR ──────────────────────────────────────────────────── */
+function Sidebar({view,setView,profile,onLogout,overdueCount,rtOn}){
+  const r=profile.role;
+  const NAV_MAIN=[
+    {id:"home",l:"Главная",ico:"⌂"},{id:"items",l:"Товары",ico:"◻"},{id:"activity",l:"Движения",ico:"↕",badge:overdueCount},
+    ...(r==="admin"||r==="director"||r==="manager"?[{id:"branches",l:"Филиалы",ico:"◎"},{id:"recipients",l:"Получатели",ico:"◉"}]:[]),
+  ];
+  const NAV_MGMT=[
+    ...(r==="admin"||r==="director"?[{id:"reports",l:"Отчёты",ico:"≡"},{id:"suppliers",l:"Поставщики",ico:"◈"}]:[]),
+    ...(r==="admin"?[{id:"settings",l:"Справочники",ico:"⚙"},{id:"users",l:"Пользователи",ico:"◉"}]:[]),
+  ];
+  const groups=[{items:NAV_MAIN},...(NAV_MGMT.length?[{label:"Управление",items:NAV_MGMT}]:[])];
+  return<aside style={{width:220,background:"var(--nav)",display:"flex",flexDirection:"column",flexShrink:0}}>
+    <div style={{padding:"20px 16px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>📦</div>
+        <div><div className="ff" style={{fontWeight:700,fontSize:15,color:"white"}}>Учёт и Склад</div><div style={{fontSize:10,color:"var(--navm)"}}>Маркетинг</div></div>
+      </div>
+    </div>
+    <nav style={{flex:1,padding:"10px 8px",overflowY:"auto"}}>
+      {groups.map((g,gi)=><div key={gi} style={{marginBottom:6}}>
+        {g.label&&<div style={{padding:"8px 10px 4px",fontSize:10,fontWeight:600,color:"var(--navm)",letterSpacing:".1em",textTransform:"uppercase"}}>{g.label}</div>}
+        {g.items.map(n=>{const act=view===n.id;return<button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",alignItems:"center",gap:9,width:"100%",padding:"8px 10px",marginBottom:1,borderRadius:9,background:act?"var(--nav3)":"transparent",color:act?"white":"var(--navm)",fontSize:13,fontWeight:act?600:400,textAlign:"left",cursor:"pointer",transition:"all .12s"}}
+          onMouseEnter={e=>{if(!act){e.currentTarget.style.background="var(--nav2)";e.currentTarget.style.color="white"}}}
+          onMouseLeave={e=>{if(!act){e.currentTarget.style.background="transparent";e.currentTarget.style.color="var(--navm)"}}}>
+          <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0,opacity:act?1:.7}}>{n.ico}</span><span style={{flex:1}}>{n.l}</span>
+          {n.badge>0&&<span style={{background:"var(--rd)",color:"white",borderRadius:999,padding:"1px 6px",fontSize:10,fontWeight:700}}>{n.badge}</span>}
+        </button>})}
+      </div>)}
+    </nav>
+    <div style={{padding:"10px 10px",borderTop:"1px solid rgba(255,255,255,.06)"}}>
+      <RTDot on={rtOn}/>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 4px",marginTop:8}}>
+        <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,var(--ink),var(--pu))",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:13,fontWeight:700,flexShrink:0}}>{(profile.name||profile.email||"?")[0].toUpperCase()}</div>
+        <div style={{flex:1}}><div className="ff" style={{fontSize:12,color:"white",fontWeight:600}}>{profile.name||profile.email}</div><div style={{fontSize:10,color:"var(--navm)"}}>{ROLES[profile.role]}</div></div>
+        <button onClick={onLogout} title="Выйти" style={{padding:6,borderRadius:7,color:"var(--navm)",cursor:"pointer",fontSize:14,transition:"color .12s"}} onMouseEnter={e=>e.target.style.color="white"} onMouseLeave={e=>e.target.style.color="var(--navm)"}>⎋</button>
+      </div>
+    </div>
+  </aside>
+}
+
+/* ── RT DOT ───────────────────────────────────────────────────── */
+const RTDot=({on})=><div style={{display:"flex",alignItems:"center",gap:5}}>
+  <span style={{width:7,height:7,borderRadius:"50%",background:on?"var(--gr)":"var(--navm)",boxShadow:on?"0 0 0 3px var(--gr-l)":"none"}}/>
+  <span style={{fontSize:11,color:on?"var(--gr)":"var(--navm)",fontWeight:500}}>{on?"Live":"—"}</span>
+</div>;
+
+/* ── HOME ─────────────────────────────────────────────────────── */
+function Home({S,stock,checkouts,setView}){
+  const{products,movements,branches,recipients,profile,toast,can}=S;
+  const[sheet,setSheet]=useState(null);
+  const active=products.filter(p=>!p.archived);
+  const totalQty=active.reduce((a,p)=>a+(stock[p.id]||0),0);
+  const totalVal=active.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);
+  const overdue=checkouts.filter(c=>c.due_date&&c.due_date<TODAY);
+  const soon=checkouts.filter(c=>c.due_date&&c.due_date>TODAY&&c.due_date<=IN3D);
+  const lastOut=useMemo(()=>[...movements].filter(m=>m.type==="out"&&m.issuer_id===profile?.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""))[0],[movements,profile]);
+  const recent=[...movements].sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||"")).slice(0,6);
+  const lowStock=active.filter(p=>(stock[p.id]||0)<5);
+  const byBranch=branches.map(b=>{const os=checkouts.filter(c=>c.branch_id===b.id);return{...b,qty:os.reduce((a,c)=>a+c.remaining,0),val:os.reduce((a,c)=>a+(active.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0)}});
+  const morning=new Date().getHours()<12?"Доброе утро":new Date().getHours()<18?"Добрый день":"Добрый вечер";
+  const pName=id=>products.find(p=>p.id===id)?.name??"—";
+  const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
+
+  const ActionCard=({item,onOpen})=>{
+    const[h,sh]=useState(false);
+    return<button onClick={onOpen} onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)}
+      style={{textAlign:"left",padding:"22px",background:h?item.accent+"12":"var(--sur)",border:`1px solid ${h?item.accent:"var(--brd)"}`,borderRadius:16,cursor:"pointer",transition:"all .18s",boxShadow:h?"var(--sh2)":"var(--sh)",width:"100%",position:"relative"}}>
+      {item.tag&&<div style={{position:"absolute",top:12,right:12,background:item.accent,color:"white",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>{item.tag}</div>}
+      <div style={{fontSize:30,marginBottom:12}}>{item.ico}</div>
+      <div className="ff" style={{fontWeight:700,fontSize:16,color:"var(--tx)",marginBottom:4}}>{item.title}</div>
+      <div style={{fontSize:12,color:"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.sub}</div>
+    </button>
+  };
+
+  return<div style={{height:"100%",overflow:"auto",background:"var(--bg)"}}>
+    <div style={{padding:"28px 28px 24px",background:"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
+        <div>
+          <h1 className="ff" style={{fontSize:28,fontWeight:700,color:"var(--tx)",letterSpacing:"-.02em"}}>{morning}, {profile?.name||profile?.email?.split("@")[0]} 👋</h1>
+          <p style={{fontSize:13,color:"var(--tx3)",marginTop:4}}>{ROLES[profile?.role]} · {new Date().toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"})}</p>
+        </div>
+        <Btn v="secondary" onClick={()=>setView("items")}>Все товары →</Btn>
+      </div>
+      {can("move")?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
+        {[
+          {ico:"📥",type:"in",title:"Принять товар",sub:"Новая поставка от поставщика",accent:"var(--gr)"},
+          {ico:"📤",type:"out",title:lastOut?"Повторить выдачу":"Выдать товар",
+           sub:lastOut?`→ ${rName(lastOut.recipient_id)} · ${pName(lastOut.product_id)}`:"На мероприятие или акцию",
+           accent:"var(--ink)",tag:lastOut?"⟳ Повторить":null,
+           prefill:lastOut?{product_id:lastOut.product_id,qty:lastOut.qty,recipient_id:lastOut.recipient_id,purpose:lastOut.purpose,sz:lastOut.sz}:{}},
+          {ico:"🔄",type:"return",title:"Принять возврат",sub:"Сотрудник вернул товар",accent:"var(--pu)"},
+        ].map(item=><ActionCard key={item.type} item={item} onOpen={()=>setSheet({type:item.type,prefill:item.prefill||{}})}/>)}
+      </div>:null}
+    </div>
+    <div style={{padding:24}}>
+      {overdue.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FECACA",borderLeft:"4px solid var(--rd)",borderRadius:14,padding:"14px 18px",marginBottom:12,animation:"fadeUp .2s ease"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span className="ff" style={{fontWeight:700,fontSize:15,color:"var(--rd)"}}>⚠ Просрочено {overdue.length} выдач</span>
+        </div>
+        {overdue.slice(0,3).map((c,i)=>{const days=Math.floor((new Date()-new Date(c.due_date))/864e5);return<div key={i} style={{fontSize:12,color:"var(--tx2)",display:"flex",gap:8,alignItems:"center",marginBottom:3}}>
+          <span style={{fontWeight:600}}>{rName(c.recipient_id)}</span><span>—</span><span>{pName(c.product_id)}</span><span>× {c.remaining} шт</span><Badge color="red">+{days}д</Badge>
+        </div>})}
+      </div>}
+      {soon.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FDE68A",borderLeft:"4px solid var(--am)",borderRadius:14,padding:"12px 18px",marginBottom:12}}>
+        <span className="ff" style={{fontWeight:600,fontSize:13,color:"var(--am)"}}>⏳ Истекают в ближайшие 3 дня: {soon.length}</span>
+        <div style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap"}}>{soon.map((c,i)=><Badge key={i} color="amber">{rName(c.recipient_id)} · {pName(c.product_id)} до {c.due_date}</Badge>)}</div>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
+        {[{v:active.length,l:"Позиций",c:"var(--ink)"},{v:`${totalQty} шт`,l:"Единиц",c:"var(--gr)"},{v:som(totalVal),l:"Стоимость",c:"var(--pu)"},{v:overdue.length,l:"Просрочено",c:overdue.length?"var(--rd)":"var(--gr)"}].map((k,i)=>
+          <div key={i} className="card" style={{padding:"16px 18px",borderTop:`3px solid ${k.c}`}}><div className="ff" style={{fontSize:24,fontWeight:800,color:k.c}}>{k.v}</div><div style={{fontSize:11,color:"var(--tx3)",marginTop:4}}>{k.l}</div></div>
+        )}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16}}>
+        <div className="card" style={{padding:0,overflow:"hidden"}}>
+          <div className="ff" style={{padding:"14px 18px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:15}}>Последние операции</div>
+          {recent.length===0?<div style={{padding:32,textAlign:"center",color:"var(--tx3)"}}>Нет операций</div>:
+          recent.map((m,i)=><div key={m.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 18px",borderBottom:i<recent.length-1?"1px solid var(--brd)":"none"}}>
+            <TBadge type={m.type}/><span style={{fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:13}}>{pName(m.product_id)}</span>
+            <span className="ff" style={{fontWeight:700,color:"var(--tx2)"}}>×{m.qty}</span><span style={{fontSize:11,color:"var(--tx3)"}}>{m.recipient_id?rName(m.recipient_id):"—"}</span>
+            <span style={{fontSize:10,color:"var(--tx3)",fontFamily:"monospace"}}>{(m.created_at||"").slice(0,10)}</span>
+          </div>)}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {lowStock.length>0&&<div className="card" style={{padding:0,overflow:"hidden"}}>
+            <div style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><span className="ff" style={{fontWeight:600,fontSize:14,color:"var(--am)"}}>📉 Заканчивается</span><Badge color="amber">{lowStock.length}</Badge></div>
+            {lowStock.slice(0,4).map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid var(--brd)",fontSize:13}}><span style={{fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:130}}>{p.name}</span><Badge color={(stock[p.id]||0)===0?"red":"amber"}>{stock[p.id]||0} шт</Badge></div>)}
+          </div>}
+          <div className="card" style={{padding:0,overflow:"hidden"}}>
+            <div className="ff" style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:14}}>По филиалам</div>
+            {byBranch.filter(b=>b.qty>0||branches.length<=4).map((b,i)=><div key={b.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<byBranch.length-1?"1px solid var(--brd)":"none"}}>
+              <div><div style={{fontWeight:500,fontSize:13}}>{b.name}</div><div style={{fontSize:10,color:"var(--tx3)"}}>{b.city}</div></div>
+              <div style={{textAlign:"right"}}><div className="ff" style={{fontWeight:700,fontSize:16,color:b.qty>0?"var(--ink)":"var(--tx3)"}}>{b.qty}</div><div style={{fontSize:10,color:"var(--tx3)"}}>{som(b.val)}</div></div>
+            </div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <Sheet open={!!sheet} onClose={()=>setSheet(null)} title={sheet?TL[sheet.type]:""} dirty={false}>
+      {sheet&&<OpForm type={sheet.type} prefill={sheet.prefill} onSave={()=>{setSheet(null);toast(`${TL[sheet.type]} сохранена`)}} onCancel={()=>setSheet(null)} S={{...S,stock}}/>}
+    </Sheet>
+  </div>
+}
+
+/* ── APP ROOT ─────────────────────────────────────────────────── */
 function App(){
-  const[profile,setProfile]=useState(null);
-  const[loading,setLoading]=useState(true);
-  const[rtOn,setRtOn]=useState(false);
-  const[showOnboard,setShowOnboard]=useState(false);
-  const{ts,toast}=useToast();
-  const[view,setView]=useState("home");
+  const[profile,setProfile]=useState(null);const[loading,setLoading]=useState(true);const[rtOn,setRtOn]=useState(false);
+  const[showOnboard,setShowOnboard]=useState(false);const{ts,toast}=useToast();const[view,setView]=useState("home");
   const[data,setData]=useState({products:[],movements:[],branches:[],locations:[],suppliers:[],directions:[],categories:[],productTypes:[],recipients:[],profiles:[]});
 
   useEffect(()=>{
-    sb.auth.getSession().then(({data:{session}})=>{
-      if(session)loadProfile(session.user.id);else setLoading(false);
-    });
+    sb.auth.getSession().then(({data:{session}})=>{if(session)loadProfile(session.user.id);else setLoading(false)});
     const{data:{subscription}}=sb.auth.onAuthStateChange((_,s)=>{if(!s){setProfile(null);setLoading(false)}});
     return()=>subscription.unsubscribe();
   },[]);
 
-  const loadProfile=async uid=>{
-    const{data:p}=await sb.from("profiles").select("*").eq("id",uid).single();
-    if(p)setProfile(p);
-    setLoading(false);
-  };
-
+  const loadProfile=async uid=>{const{data:p}=await sb.from("profiles").select("*").eq("id",uid).single();if(p)setProfile(p);setLoading(false);};
   const loadRefData=useCallback(async()=>{
     const tabs=["branches","locations","suppliers","directions","categories","product_types","recipients","profiles"];
     const res=await Promise.all(tabs.map(t=>sb.from(t).select("*")));
@@ -1265,94 +1116,48 @@ function App(){
   useEffect(()=>{
     if(!profile)return;
     const fetch=async()=>{
-      const[{data:pr},{data:mv}]=await Promise.all([
-        sb.from("products").select("*").eq("archived",false),
-        sb.from("movements").select("*").order("created_at",{ascending:false})
-      ]);
-      if(pr)setData(p=>({...p,products:pr}));
-      if(mv)setData(p=>({...p,movements:mv}));
+      const[{data:pr},{data:mv}]=await Promise.all([sb.from("products").select("*").eq("archived",false),sb.from("movements").select("*").order("created_at",{ascending:false})]);
+      if(pr)setData(p=>({...p,products:pr}));if(mv)setData(p=>({...p,movements:mv}));
     };
     fetch();
-    if(!localStorage.getItem(ONBOARD_KEY)){
-      setTimeout(()=>setShowOnboard(true),400);
-    }
-    const pCh=sb.channel("p-rt").on("postgres_changes",{event:"*",schema:"public",table:"products"},e=>{
-      setData(prev=>{const ps=prev.products;
-        if(e.eventType==="INSERT")return{...prev,products:[...ps,e.new]};
-        if(e.eventType==="UPDATE")return{...prev,products:ps.map(x=>x.id===e.new.id?e.new:x)};
-        if(e.eventType==="DELETE")return{...prev,products:ps.filter(x=>x.id!==e.old.id)};
-        return prev;
-      });
-    }).subscribe(s=>setRtOn(s==="SUBSCRIBED"));
-    const mCh=sb.channel("m-rt").on("postgres_changes",{event:"*",schema:"public",table:"movements"},e=>{
-      setData(prev=>{const ms=prev.movements;
-        if(e.eventType==="INSERT"){toast(`${TL[e.new.type]} зафиксирована`);return{...prev,movements:[e.new,...ms]}}
-        if(e.eventType==="UPDATE")return{...prev,movements:ms.map(x=>x.id===e.new.id?e.new:x)};
-        if(e.eventType==="DELETE")return{...prev,movements:ms.filter(x=>x.id!==e.old.id)};
-        return prev;
-      });
-    }).subscribe();
+    if(!localStorage.getItem(ONBOARD_KEY))setTimeout(()=>setShowOnboard(true),400);
+    const pCh=sb.channel("p-rt").on("postgres_changes",{event:"*",schema:"public",table:"products"},e=>{setData(prev=>{const ps=prev.products;if(e.eventType==="INSERT")return{...prev,products:[...ps,e.new]};if(e.eventType==="UPDATE")return{...prev,products:ps.map(x=>x.id===e.new.id?e.new:x)};if(e.eventType==="DELETE")return{...prev,products:ps.filter(x=>x.id!==e.old.id)};return prev})}).subscribe(s=>setRtOn(s==="SUBSCRIBED"));
+    const mCh=sb.channel("m-rt").on("postgres_changes",{event:"*",schema:"public",table:"movements"},e=>{setData(prev=>{const ms=prev.movements;if(e.eventType==="INSERT"){toast(`${TL[e.new.type]} зафиксирована`);return{...prev,movements:[e.new,...ms]}}if(e.eventType==="UPDATE")return{...prev,movements:ms.map(x=>x.id===e.new.id?e.new:x)};if(e.eventType==="DELETE")return{...prev,movements:ms.filter(x=>x.id!==e.old.id)};return prev})}).subscribe();
     const rCh=sb.channel("r-rt").on("postgres_changes",{event:"*",schema:"public",table:"recipients"},()=>loadRefData()).subscribe();
     return()=>{sb.removeChannel(pCh);sb.removeChannel(mCh);sb.removeChannel(rCh);setRtOn(false)};
   },[profile]);
 
-  const stock=useStock(data.movements);
-  const checkouts=useCheckouts(data.movements);
+  const stock=useStock(data.movements);const checkouts=useCheckouts(data.movements);
   const overdue=useMemo(()=>checkouts.filter(c=>c.due_date&&c.due_date<TODAY),[checkouts]);
-
-  const can=useCallback(a=>{
-    if(!profile)return false;
-    const r=profile.role;
-    switch(a){
-      case "admin":     return r==="admin";
-      case "settings":  return r==="admin";
-      case "reports":   return r==="admin"||r==="director";
-      case "suppliers": return r==="admin"||r==="director";
-      case "edit":      return r==="admin"||r==="manager";
-      case "move":      return r==="admin"||r==="manager";
-      default:          return true;
-    }
-  },[profile]);
-
+  const can=useCallback(a=>{if(!profile)return false;const r=profile.role;switch(a){case"admin":return r==="admin";case"settings":return r==="admin";case"reports":return r==="admin"||r==="director";case"suppliers":return r==="admin"||r==="director";case"edit":return r==="admin"||r==="manager";case"move":return r==="admin"||r==="manager";default:return true}},[profile]);
   const isRestricted=profile&&(profile.role==="manager"||profile.role==="employee");
   const userBranchId=profile?.branch_id;
   const S={...data,profile,can,toast,isRestricted,userBranchId};
 
-  if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}>
-    <Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span>
-  </div>;
-
+  if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}><Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span></div>;
   if(!profile)return<><Login onLogin={p=>{setProfile(p);toast("Добро пожаловать!")}}/><Toasts ts={ts}/></>;
 
   const r=profile.role;
-  const ALLOWED={
-    admin:    ["home","items","activity","branches","recipients","reports","suppliers","settings","users"],
-    director: ["home","items","activity","branches","recipients","reports","suppliers"],
-    manager:  ["home","items","activity","branches","recipients"],
-    employee: ["home","items","activity"],
-  }[r]||["home","items","activity"];
+  const ALLOWED={admin:["home","items","activity","branches","recipients","reports","suppliers","settings","users"],director:["home","items","activity","branches","recipients","reports","suppliers"],manager:["home","items","activity","branches","recipients"],employee:["home","items","activity"]}[r]||["home","items","activity"];
   const safeView=ALLOWED.includes(view)?view:"home";
 
   const VIEWS={
-    home:       <Home       S={S} stock={stock} checkouts={checkouts} setView={setView}/>,
-    items:      <ItemsView  S={S} stock={stock} checkouts={checkouts}/>,
-    activity:   <ActivityView S={S} checkouts={checkouts} overdue={overdue}/>,
-    branches:   <BranchesView S={S} checkouts={checkouts}/>,
-    recipients: <RecipientsView S={S}/>,
-    reports:    <ReportsView S={S} stock={stock}/>,
-    suppliers:  <SuppliersView S={S}/>,
-    settings:   <SettingsView S={S} refreshData={loadRefData}/>,
-    users:      <UsersView S={S}/>,
+    home:<Home S={S} stock={stock} checkouts={checkouts} setView={setView}/>,
+    items:<ItemsView S={S} stock={stock} checkouts={checkouts}/>,
+    activity:<ActivityView S={S} checkouts={checkouts} overdue={overdue}/>,
+    branches:<BranchesView S={S} checkouts={checkouts}/>,
+    recipients:<RecipientsView S={S}/>,
+    reports:<ReportsView S={S} stock={stock}/>,
+    suppliers:<SuppliersView S={S}/>,
+    settings:<SettingsView S={S} refreshData={loadRefData}/>,
+    users:<UsersView S={S}/>,
   };
 
-  const handleOnboardDone=()=>{
-    localStorage.setItem(ONBOARD_KEY,"1");
-    setShowOnboard(false);
-  };
+  const handleOnboardDone=()=>{localStorage.setItem(ONBOARD_KEY,"1");setShowOnboard(false);};
 
   return<div style={{display:"flex",height:"100vh",overflow:"hidden",background:"var(--bg)"}}>
-    {showOnboard&&<Onboarding role={r} onDone={handleOnboardDone}/>}
-    <Sidebar view={view} setView={v=>{if(ALLOWED.includes(v))setView(v)}} profile={profile} rtOn={rtOn} overdueCount={overdue.length}
+    {showOnboard&&<Onboarding role={profile.role} onDone={handleOnboardDone}/>}
+    <Sidebar view={safeView} setView={v=>{if(ALLOWED.includes(v))setView(v)}} profile={profile} rtOn={rtOn} overdueCount={overdue.length}
       onLogout={async()=>{await sb.auth.signOut();setProfile(null);toast("До свидания!")}}/>
     <main style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
       {VIEWS[safeView]||null}
