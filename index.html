@@ -34,7 +34,7 @@ button{cursor:pointer;border:none;background:none}
 input,select{outline:none}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:4px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 @keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
@@ -98,10 +98,6 @@ function useToast(){
     setTimeout(()=>set(p=>p.filter(t=>t.id!==id)),3200);
   },[]);
   return{ts,toast};
-}
-function useHover(){
-  const[h,s]=useState(false);
-  return[h,{onMouseEnter:()=>s(true),onMouseLeave:()=>s(false)}];
 }
 
 /* ── PRIMITIVES ───────────────────────────────────────────────────── */
@@ -266,7 +262,7 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
       sz:t==="out"?form.sz||null:null,
       direction_id:form.direction_id?Number(form.direction_id):null,
       condition:t==="return"?form.condition:null,
-      notes:form.notes||null,date:TODAY
+      notes:form.notes||null
     });
     setL(false);
     if(error){toast("Ошибка: "+error.message,"error");return}
@@ -370,8 +366,10 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
 }
 
 /* ── ONBOARDING ───────────────────────────────────────────────────── */
-function Onboarding({onDone}){
+function Onboarding({role,onDone}){
   const[step,setStep]=useState(0);
+  const isAdmin=role==="admin";
+  const isManager=role==="manager";
   const steps=[
     {
       ico:"📦",
@@ -384,57 +382,65 @@ function Onboarding({onDone}){
       ],
       cta:"Познакомиться →"
     },
-    {
-      ico:"🔄",
-      title:"Как работает система",
-      sub:"Три главных действия покрывают весь цикл работы со складом.",
+    isAdmin?{
+      ico:"⚙️",
+      title:"Настройка системы",
+      sub:"Как администратор вы можете управлять справочниками, пользователями и филиалами.",
       flows:[
-        {ico:"📥",color:"var(--gr)",title:"Принять товар",text:"Поставщик привёз — оформляем приход. Остатки обновляются автоматически."},
-        {ico:"📤",color:"var(--ink)",title:"Выдать",text:"Выбираем товар, получателя, указываем цель и срок возврата. Фиксируем номер СЗ."},
-        {ico:"🔄",color:"var(--pu)",title:"Вернуть",text:"Сотрудник вернул товар — оформляем возврат с оценкой состояния."},
+        {ico:"📋",color:"var(--ink)",title:"Справочники",text:"Добавьте категории, типы продуктов, места и поставщиков."},
+        {ico:"👥",color:"var(--pu)",title:"Пользователи",text:"Создайте учётные записи для сотрудников."},
+        {ico:"🏢",color:"var(--gr)",title:"Филиалы",text:"Добавьте все филиалы банка."},
+      ],
+      cta:"Далее →"
+    }:isManager?{
+      ico:"📤",
+      title:"Выдача и приём",
+      sub:"Вы можете принимать товары от поставщиков и выдавать их сотрудникам.",
+      flows:[
+        {ico:"📥",color:"var(--gr)",title:"Принять товар",text:"Оформляйте приход от поставщика."},
+        {ico:"📤",color:"var(--ink)",title:"Выдать",text:"Выдавайте товары на мероприятия."},
+        {ico:"🔄",color:"var(--pu)",title:"Возврат",text:"Принимайте возврат от сотрудников."},
+      ],
+      cta:"Далее →"
+    }:{
+      ico:"👁️",
+      title:"Просмотр остатков",
+      sub:"Вы можете видеть все товары и движения своего филиала.",
+      features:[
+        {ico:"📊",text:"Смотрите остатки на складе"},
+        {ico:"📜",text:"Просматривайте историю движений"},
+        {ico:"🔍",text:"Ищите товары по названию или артикулу"},
       ],
       cta:"Далее →"
     },
     {
       ico:"✅",
       title:"Всё готово к работе",
-      sub:"Система уже подключена к базе данных. Начните с добавления товаров или настройки справочников.",
-      checklist:[
-        {text:"Добавьте товары в каталог",where:"items"},
-        {text:"Настройте категории и места хранения",where:"settings"},
-        {text:"Добавьте получателей",where:"recipients"},
-        {text:"Оформите первый приход",where:"activity"},
-      ],
+      sub:"Система уже подключена к базе данных. Начните работу прямо сейчас.",
       cta:"Начать работу"
     }
   ];
   const s=steps[step];
   return<div style={{position:"fixed",inset:0,zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:24,background:"rgba(26,24,20,.6)",backdropFilter:"blur(6px)"}}>
     <div style={{background:"var(--sur)",borderRadius:24,width:"100%",maxWidth:560,boxShadow:"var(--sh3)",animation:"scaleIn .2s ease",overflow:"hidden"}}>
-      {/* Progress bar */}
       <div style={{height:3,background:"var(--brd)"}}>
         <div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"var(--ink)",transition:"width .3s ease",borderRadius:999}}/>
       </div>
-
       <div style={{padding:"32px 36px 28px"}}>
-        {/* Step indicator */}
         <div style={{display:"flex",gap:6,marginBottom:28}}>
           {steps.map((_,i)=><div key={i} style={{height:4,flex:1,borderRadius:999,background:i<=step?"var(--ink)":"var(--brd)",transition:"background .3s"}}/>)}
         </div>
-
         <div style={{marginBottom:24}}>
           <div style={{fontSize:36,marginBottom:12}}>{s.ico}</div>
           <h2 className="ff" style={{fontSize:22,fontWeight:700,color:"var(--tx)",letterSpacing:"-.02em",marginBottom:8}}>{s.title}</h2>
           <p style={{fontSize:14,color:"var(--tx2)",lineHeight:1.65}}>{s.sub}</p>
         </div>
-
         {s.features&&<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:8}}>
           {s.features.map((f,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:"var(--bg)",borderRadius:10}}>
             <span style={{fontSize:18,flexShrink:0}}>{f.ico}</span>
             <span style={{fontSize:13,color:"var(--tx2)"}}>{f.text}</span>
           </div>)}
         </div>}
-
         {s.flows&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:8}}>
           {s.flows.map((f,i)=><div key={i} style={{padding:"14px 12px",background:"var(--bg)",borderRadius:12,textAlign:"center"}}>
             <div style={{width:40,height:40,borderRadius:12,background:f.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,margin:"0 auto 8px"}}>{f.ico}</div>
@@ -442,15 +448,7 @@ function Onboarding({onDone}){
             <div style={{fontSize:11,color:"var(--tx3)",lineHeight:1.4}}>{f.text}</div>
           </div>)}
         </div>}
-
-        {s.checklist&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:8}}>
-          {s.checklist.map((c,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"var(--bg)",borderRadius:10}}>
-            <div style={{width:20,height:20,borderRadius:"50%",border:"2px solid var(--brd2)",flexShrink:0}}/>
-            <span style={{fontSize:13,color:"var(--tx2)"}}>{c.text}</span>
-          </div>)}
-        </div>}
       </div>
-
       <div style={{padding:"0 36px 28px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <button onClick={onDone} style={{fontSize:13,color:"var(--tx3)",cursor:"pointer",background:"none",border:"none",padding:"4px 0"}}>Пропустить</button>
         <Btn onClick={()=>{if(step<steps.length-1)setStep(s=>s+1);else onDone()}} size="lg">{s.cta}</Btn>
@@ -580,7 +578,6 @@ function Home({S,stock,checkouts,setView}){
   const hideGS=()=>{localStorage.setItem("mkt_gs_hidden","1");setShowGS(false)};
 
   return<div style={{height:"100%",overflow:"auto",background:"var(--bg)"}}>
-    {/* Header */}
     <div style={{padding:"28px 28px 24px",background:"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
@@ -589,8 +586,6 @@ function Home({S,stock,checkouts,setView}){
         </div>
         <Btn v="secondary" onClick={()=>setView("items")}>Все товары →</Btn>
       </div>
-
-      {/* Action cards or read-only banner */}
       {can("move")
         ?<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
           {[
@@ -602,16 +597,11 @@ function Home({S,stock,checkouts,setView}){
             {ico:"🔄",type:"return",title:"Принять возврат",sub:"Сотрудник вернул товар",accent:"var(--pu)"},
           ].map(item=><ActionCard key={item.type} item={item} onOpen={()=>setSheet({type:item.type,prefill:item.prefill||{}})}/>)}
         </div>
-        :<div style={{padding:"16px 18px",background:"var(--bg)",borderRadius:12,border:"1px solid var(--brd)",fontSize:13,color:"var(--tx3)",display:"flex",alignItems:"center",gap:10}}>
-          <span>👁</span><span>Режим просмотра. Операции доступны маркетологам и администраторам.</span>
-        </div>}
+        :null}
     </div>
 
     <div style={{padding:24}}>
-      {/* Getting started */}
       {showGS&&<GettingStarted products={products} movements={movements} recipients={recipients} onDismiss={hideGS} setView={setView}/>}
-
-      {/* Overdue */}
       {overdue.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FECACA",borderLeft:"4px solid var(--rd)",borderRadius:14,padding:"14px 18px",marginBottom:12,animation:"fadeUp .2s ease"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
           <span className="ff" style={{fontWeight:700,fontSize:15,color:"var(--rd)"}}>⚠ Просрочено {overdue.length} выдач</span>
@@ -621,16 +611,12 @@ function Home({S,stock,checkouts,setView}){
           <span style={{fontWeight:600}}>{rName(c.recipient_id)}</span><span>—</span><span>{pName(c.product_id)}</span><span>× {c.remaining} шт</span><Badge color="red">+{days}д</Badge>
         </div>})}
       </div>}
-
-      {/* Soon */}
       {soon.length>0&&<div style={{background:"var(--sur)",border:"1px solid #FDE68A",borderLeft:"4px solid var(--am)",borderRadius:14,padding:"12px 18px",marginBottom:12}}>
         <span className="ff" style={{fontWeight:600,fontSize:13,color:"var(--am)"}}>⏳ Истекают в ближайшие 3 дня: {soon.length}</span>
         <div style={{marginTop:6,display:"flex",gap:8,flexWrap:"wrap"}}>
           {soon.map((c,i)=><Badge key={i} color="amber">{rName(c.recipient_id)} · {pName(c.product_id)} до {c.due_date}</Badge>)}
         </div>
       </div>}
-
-      {/* KPI */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
         {[{v:active.length,l:"Позиций товаров",c:"var(--ink)"},{v:`${totalQty} шт`,l:"Единиц на складе",c:"var(--gr)"},{v:som(totalVal),l:"Стоимость склада",c:"var(--pu)"},{v:overdue.length,l:"Просрочено выдач",c:overdue.length?"var(--rd)":"var(--gr)"}].map((k,i)=>
           <div key={i} className="card" style={{padding:"16px 18px",borderTop:`3px solid ${k.c}`}}>
@@ -639,8 +625,6 @@ function Home({S,stock,checkouts,setView}){
           </div>
         )}
       </div>
-
-      {/* Main grid */}
       <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:16}}>
         <div className="card" style={{padding:0,overflow:"hidden"}}>
           <div className="ff" style={{padding:"14px 18px",borderBottom:"1px solid var(--brd)",fontWeight:600,fontSize:15}}>Последние операции</div>
@@ -654,7 +638,6 @@ function Home({S,stock,checkouts,setView}){
               <span style={{fontSize:10,color:"var(--tx3)",fontFamily:"monospace"}}>{(m.created_at||"").slice(0,10)}</span>
             </div>)}
         </div>
-
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {lowStock.length>0&&<div className="card" style={{padding:0,overflow:"hidden"}}>
             <div style={{padding:"12px 16px",borderBottom:"1px solid var(--brd)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -679,14 +662,12 @@ function Home({S,stock,checkouts,setView}){
         </div>
       </div>
     </div>
-
     <Sheet open={!!sheet} onClose={()=>setSheet(null)} title={sheet?TL[sheet.type]:""} dirty={false}>
       {sheet&&<OpForm type={sheet.type} prefill={sheet.prefill} onSave={()=>{setSheet(null);toast(`${TL[sheet.type]} сохранена`)}} onCancel={()=>setSheet(null)} S={{...S,stock}}/>}
     </Sheet>
   </div>
 }
 
-/* ActionCard — отдельный компонент чтобы не нарушать Rules of Hooks */
 function ActionCard({item,onOpen}){
   const[h,sh]=useState(false);
   return<button onClick={onOpen} onMouseEnter={()=>sh(true)} onMouseLeave={()=>sh(false)}
@@ -698,7 +679,6 @@ function ActionCard({item,onOpen}){
   </button>
 }
 
-/* ── ITEM CARD — отдельный компонент (fix Rules of Hooks) ─────────── */
 function ItemCard({p,stock,categories,checkouts,onClick}){
   const[h,sh]=useState(false);
   const qty=stock[p.id]||0;
@@ -720,7 +700,7 @@ function ItemCard({p,stock,categories,checkouts,onClick}){
 
 /* ── ITEMS VIEW ───────────────────────────────────────────────────── */
 function ItemsView({S,stock,checkouts}){
-  const{products,categories,suppliers,directions,locations,productTypes,can,toast,profile,isRestricted,userBranchId}=S;
+  const{products,categories,suppliers,directions,locations,productTypes,can,toast,isRestricted,userBranchId}=S;
   const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
   const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
   const visible=products.filter(p=>!p.archived&&(!isRestricted||locations.find(l=>l.id===p.location_id)?.branch_id===userBranchId));
@@ -804,7 +784,7 @@ function ItemModal({p,stock,S,checkouts,onClose}){
   const[confirm,setConfirm]=useState(null);
   const rName=id=>S.recipients.find(r=>r.id===id)?.name??"—";
   const doAction=async(type,qty_,extra={})=>{
-    const{error}=await sb.from("movements").insert({type,product_id:p.id,qty:qty_,location_id:p.location_id,issuer_id:S.profile.id,date:TODAY,...extra});
+    const{error}=await sb.from("movements").insert({type,product_id:p.id,qty:qty_,location_id:p.location_id,issuer_id:S.profile.id,...extra});
     if(error)S.toast("Ошибка","error");else S.toast(`${TL[type]} сохранена`);setConfirm(null);
   };
   return<div style={{position:"fixed",inset:0,zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
@@ -875,13 +855,13 @@ function ActivityView({S,checkouts,overdue}){
   const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
   const filtered=[...movements].filter(m=>{
     if(typeF!=="all"&&m.type!==typeF)return false;
-    if(isRestricted&&m.branch_id!==userBranchId&&m.issuer_id!==profile?.id)return false;
+    if(isRestricted && m.branch_id !== userBranchId) return false;
     if(brF&&m.branch_id!=brF)return false;
-    const d=(m.date||m.created_at||"").slice(0,10);
+    const d=(m.created_at||"").slice(0,10);
     if(df&&d<df)return false;if(d>dt)return false;
     if(search){const str=(pName(m.product_id)+(m.recipient_id?rName(m.recipient_id):"")+(m.purpose||"")+(m.sz||"")).toLowerCase();if(!str.includes(search.toLowerCase()))return false}
     return true;
-  }).sort((a,b)=>(b.created_at||b.date||"").localeCompare(a.created_at||a.date||""));
+  }).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
 
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
@@ -911,7 +891,7 @@ function ActivityView({S,checkouts,overdue}){
           <thead><tr style={{background:"var(--bg)"}}>{["Дата","Тип","Товар","Кол","Получатель","Поставщик","Филиал","СЗ","Цель"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.map((m,i)=>{const br=branches.find(b=>b.id===m.branch_id);const sup=suppliers.find(s=>s.id===m.supplier_id);return<tr key={m.id} style={{background:i%2?"var(--bg)":"var(--sur)",transition:"background .1s"}} onMouseEnter={e=>e.currentTarget.style.background="var(--ink-l)"} onMouseLeave={e=>e.currentTarget.style.background=i%2?"var(--bg)":"var(--sur)"}>
-              <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{(m.created_at||m.date||"").slice(0,10)}</td>
+              <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{(m.created_at||"").slice(0,10)}</td>
               <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><TBadge type={m.type}/></td>
               <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)",fontWeight:500,maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pName(m.product_id)}</td>
               <td style={{padding:"10px 14px",borderBottom:"1px solid var(--brd)"}}><span className="ff" style={{fontWeight:700,color:"var(--tx2)"}}>×{m.qty}</span></td>
@@ -945,7 +925,7 @@ function BranchesView({S,checkouts}){
   const tV=bOuts.reduce((a,c)=>a+(products.find(p=>p.id===c.product_id)?.price||0)*c.remaining,0);
   const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
   const pName=id=>products.find(p=>p.id===id)?.name??"—";
-  const doReturn=async c=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее",date:TODAY});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
+  const doReturn=async c=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее"});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
 
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     {confirm&&<Confirm title="Оформить возврат?" message={`Возврат ${confirm.remaining} шт "${pName(confirm.product_id)}" от ${rName(confirm.recipient_id)}`} onOk={()=>doReturn(confirm)} onCancel={()=>setConfirm(null)}/>}
@@ -975,7 +955,7 @@ function BranchesView({S,checkouts}){
             <td style={{padding:"10px 14px",fontWeight:500}}>{pName(c.product_id)}</td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{c.remaining}</span></td>
             <td style={{padding:"10px 14px",fontSize:12}}>{som(c.remaining*price)}</td>
-            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{(c.created_at||c.date||"").slice(0,10)}</td>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{(c.created_at||"").slice(0,10)}</td>
             <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:11,color:"var(--tx3)"}}>{c.due_date||"—"}</td>
             <td style={{padding:"10px 14px",fontSize:11,color:"var(--ink)",fontWeight:500}}>{c.sz||"—"}</td>
             <td style={{padding:"10px 14px"}}>{isOD?<Badge color="red">+{days}д</Badge>:isSoon?<Badge color="amber">Скоро</Badge>:<Badge color="green">В срок</Badge>}</td>
@@ -1002,7 +982,7 @@ function RecipientsView({S}){
       <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
         <Fld label="Имя"><Inp value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Полное имя" autoFocus={false}/></Fld>
         <Fld label="Филиал"><Sel value={form.branch_id} onChange={e=>setForm({...form,branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
-        <Fld label="СЗ ID"><Inp value={form.sz_id} onChange={e=>setForm({...form,sz_id:e.target.value})} placeholder="СЗ-001"/></Fld>
+        <Fld label="Служебная записка #"><Inp value={form.sz_id} onChange={e=>setForm({...form,sz_id:e.target.value})} placeholder="опционально"/></Fld>
         <div style={{marginTop:20}}><Btn onClick={add} loading={loading}>+ Добавить</Btn></div>
       </div>
     </div>}
@@ -1016,7 +996,7 @@ function RecipientsView({S}){
         <div style={{width:34,height:34,borderRadius:"50%",background:"var(--gr)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:14,flexShrink:0}}>{r.name[0]}</div>
         <div style={{flex:1}}>
           <div className="ff" style={{fontWeight:600,fontSize:13}}>{r.name}</div>
-          <div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ: ${r.sz_id}`:""}</div>
+          <div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ #: ${r.sz_id}`:""}</div>
         </div>
         {can("edit")&&<Btn v="ghost" size="sm" onClick={()=>remove(r.id)}>Удалить</Btn>}
       </div>)}
@@ -1026,16 +1006,28 @@ function RecipientsView({S}){
 
 /* ── REPORTS VIEW ─────────────────────────────────────────────────── */
 function ReportsView({S,stock}){
-  const{products,movements,categories,directions,suppliers}=S;
+  const{products,movements,categories,directions,suppliers,branches}=S;
   const[tab,setTab]=useState("stock");
-  const rows=products.filter(p=>!p.archived).map(p=>{const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),retQ:movements.filter(m=>m.type==="return"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),wrtQ:movements.filter(m=>m.type==="writeoff"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0)}}).sort((a,b)=>b.outQ-a.outQ);
+  const[selBranchId,setSelBranchId]=useState("all");
+  const rows=products.filter(p=>!p.archived && (selBranchId==="all" || p.location_id && branches.find(b=>b.id===locations?.find(l=>l.id===p.location_id)?.branch_id)?.id == selBranchId)).map(p=>{
+    const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};
+    return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,
+      inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),
+      outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),
+    }
+  }).sort((a,b)=>b.outQ-a.outQ);
   const tV=rows.reduce((a,r)=>a+r.val,0);
-  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Возврат,Списано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.retQ},${r.wrtQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
+  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
+
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
       <span className="ff" style={{fontSize:17,fontWeight:700}}>Отчёты</span>
-      <div style={{display:"flex",gap:8}}>
-        {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"],["by_branch","По филиалам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
+        {tab==="stock"&&<Sel value={selBranchId} onChange={e=>setSelBranchId(e.target.value)} style={{width:160,fontSize:12}}>
+          <option value="all">Все филиалы</option>
+          {branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
+        </Sel>}
         <Btn v="success" size="sm" onClick={exportCSV}>↓ CSV</Btn>
       </div>
     </div>
@@ -1046,7 +1038,7 @@ function ReportsView({S,stock}){
       </div>
       {tab==="stock"&&<div className="card" style={{padding:0,overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Возврат","Списано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
           <tbody>{rows.map((r,i)=><tr key={r.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
             <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:10,color:"var(--tx3)"}}>{r.sku||"—"}</td>
             <td style={{padding:"10px 14px",fontWeight:600}}>{r.name}</td>
@@ -1054,12 +1046,13 @@ function ReportsView({S,stock}){
             <td style={{padding:"10px 14px",color:"var(--tx2)"}}>{som(r.price)}</td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--gr)"}}>{r.inQ}</span></td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{r.outQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--pu)"}}>{r.retQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--rd)"}}>{r.wrtQ}</span></td>
             <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:800,fontSize:16,color:r.qty<=0?"var(--rd)":r.qty<5?"var(--am)":"var(--tx)"}}>{r.qty}</span></td>
             <td style={{padding:"10px 14px",fontWeight:600}}>{som(r.val)}</td>
           </tr>)}</tbody>
         </table>
+      </div>}
+      {tab==="by_branch"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+        {branches.map(b=>{const prods=products.filter(p=>p.location_id&&branches.find(br=>br.id===locations?.find(l=>l.id===p.location_id)?.branch_id)?.id===b.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={b.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{b.name}{b.city?`, ${b.city}`:""}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
       </div>}
       {tab==="by_dir"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
         {directions.map(d=>{const prods=products.filter(p=>p.direction_id===d.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={d.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{d.name}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
@@ -1118,7 +1111,16 @@ function SettingsView({S,refreshData}){
   const[tab,setTab]=useState("categories");const{toast,can,branches,categories,productTypes:PT,locations,suppliers,directions}=S;
   const[n,setN]=useState({cat:{name:"",color:"#4F4CEC",icon:"📦"},type:{name:""},loc:{name:"",branch_id:branches[0]?.id||""},sup:{name:"",contact:"",inn:""},dir:{name:""},br:{name:"",city:"",head:""}});
   const upN=(k,v)=>setN(p=>({...p,[k]:{...p[k],...v}}));
-  const add=async(table,data,key)=>{if(!data.name?.trim())return;const{error}=await sb.from(table).insert(data);if(error)toast("Ошибка: "+error.message,"error");else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))};};
+  const add=async(table,data,key)=>{
+    if(!data.name?.trim())return;
+    const payload = { ...data };
+    if (table === 'categories' || table === 'product_types') {
+      payload.id = data.name.toLowerCase().replace(/\s+/g, '_');
+    }
+    const{error}=await sb.from(table).insert(payload);
+    if(error)toast("Ошибка: "+error.message,"error");
+    else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))};
+  };
   const del=async(table,id)=>{const{error}=await sb.from(table).delete().eq("id",id);if(error)toast("Ошибка — запись используется","error");else{toast("Удалено");await refreshData()}};
   const TABS=[{id:"categories",l:"Категории"},{id:"types",l:"Типы"},{id:"locations",l:"Места"},{id:"suppliers",l:"Поставщики"},{id:"directions",l:"Направления"},{id:"branches",l:"Филиалы"}];
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -1238,7 +1240,6 @@ function App(){
   const[view,setView]=useState("home");
   const[data,setData]=useState({products:[],movements:[],branches:[],locations:[],suppliers:[],directions:[],categories:[],productTypes:[],recipients:[],profiles:[]});
 
-  /* Auth */
   useEffect(()=>{
     sb.auth.getSession().then(({data:{session}})=>{
       if(session)loadProfile(session.user.id);else setLoading(false);
@@ -1253,7 +1254,6 @@ function App(){
     setLoading(false);
   };
 
-  /* Reference data */
   const loadRefData=useCallback(async()=>{
     const tabs=["branches","locations","suppliers","directions","categories","product_types","recipients","profiles"];
     const res=await Promise.all(tabs.map(t=>sb.from(t).select("*")));
@@ -1262,7 +1262,6 @@ function App(){
   },[]);
   useEffect(()=>{loadRefData()},[]);
 
-  /* Products + movements + realtime */
   useEffect(()=>{
     if(!profile)return;
     const fetch=async()=>{
@@ -1274,12 +1273,9 @@ function App(){
       if(mv)setData(p=>({...p,movements:mv}));
     };
     fetch();
-
-    /* Onboarding: показать один раз */
     if(!localStorage.getItem(ONBOARD_KEY)){
       setTimeout(()=>setShowOnboard(true),400);
     }
-
     const pCh=sb.channel("p-rt").on("postgres_changes",{event:"*",schema:"public",table:"products"},e=>{
       setData(prev=>{const ps=prev.products;
         if(e.eventType==="INSERT")return{...prev,products:[...ps,e.new]};
@@ -1288,7 +1284,6 @@ function App(){
         return prev;
       });
     }).subscribe(s=>setRtOn(s==="SUBSCRIBED"));
-
     const mCh=sb.channel("m-rt").on("postgres_changes",{event:"*",schema:"public",table:"movements"},e=>{
       setData(prev=>{const ms=prev.movements;
         if(e.eventType==="INSERT"){toast(`${TL[e.new.type]} зафиксирована`);return{...prev,movements:[e.new,...ms]}}
@@ -1297,9 +1292,7 @@ function App(){
         return prev;
       });
     }).subscribe();
-
     const rCh=sb.channel("r-rt").on("postgres_changes",{event:"*",schema:"public",table:"recipients"},()=>loadRefData()).subscribe();
-
     return()=>{sb.removeChannel(pCh);sb.removeChannel(mCh);sb.removeChannel(rCh);setRtOn(false)};
   },[profile]);
 
@@ -1307,7 +1300,6 @@ function App(){
   const checkouts=useCheckouts(data.movements);
   const overdue=useMemo(()=>checkouts.filter(c=>c.due_date&&c.due_date<TODAY),[checkouts]);
 
-  /* Права */
   const can=useCallback(a=>{
     if(!profile)return false;
     const r=profile.role;
@@ -1326,15 +1318,12 @@ function App(){
   const userBranchId=profile?.branch_id;
   const S={...data,profile,can,toast,isRestricted,userBranchId};
 
-  /* Loading */
   if(loading)return<div style={{display:"flex",height:"100vh",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,background:"var(--bg)"}}>
     <Spin s={28}/><span className="ff" style={{fontSize:16,color:"var(--tx3)"}}>Загрузка...</span>
   </div>;
 
-  /* Login */
   if(!profile)return<><Login onLogin={p=>{setProfile(p);toast("Добро пожаловать!")}}/><Toasts ts={ts}/></>;
 
-  /* Route guard */
   const r=profile.role;
   const ALLOWED={
     admin:    ["home","items","activity","branches","recipients","reports","suppliers","settings","users"],
@@ -1362,7 +1351,7 @@ function App(){
   };
 
   return<div style={{display:"flex",height:"100vh",overflow:"hidden",background:"var(--bg)"}}>
-    {showOnboard&&<Onboarding onDone={handleOnboardDone}/>}
+    {showOnboard&&<Onboarding role={r} onDone={handleOnboardDone}/>}
     <Sidebar view={view} setView={v=>{if(ALLOWED.includes(v))setView(v)}} profile={profile} rtOn={rtOn} overdueCount={overdue.length}
       onLogout={async()=>{await sb.auth.signOut();setProfile(null);toast("До свидания!")}}/>
     <main style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
