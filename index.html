@@ -220,10 +220,10 @@ function WizardSteps({current,total}){
 /* ── ONBOARDING ───────────────────────────────────────────────── */
 function Onboarding({role,onDone}){
   const[step,setStep]=useState(0);
-  const isAdmin=role==="admin",isManager=role==="manager",isDirector=role==="director";
+  const isAdmin=role==="admin",isManager=role==="manager";
   const steps=[
     {ico:"📦",title:"Добро пожаловать в Учёт и Склад",sub:"Система учёта ТМЦ для маркетинга. Заменит Excel, работает в реальном времени.",cta:"Далее →"},
-    ...(isAdmin||isDirector?[{ico:"⚙️",title:"Настройка системы",sub:"Добавьте категории, типы продуктов, места хранения и поставщиков в Справочниках.",cta:"Далее →"}] : (isManager?[{ico:"📤",title:"Выдача и приём товаров",sub:"Вы можете принимать товары от поставщиков и выдавать их сотрудникам на мероприятия.",cta:"Далее →"}]:[{ico:"👁️",title:"Просмотр остатков",sub:"Вы видите все товары и движения своего филиала. Уведомления о просрочках помогут не терять имущество.",cta:"Далее →"}])),
+    ...(isAdmin?[{ico:"⚙️",title:"Настройка системы",sub:"Добавьте категории, типы продуктов, места хранения и поставщиков в Справочниках.",cta:"Далее →"}] : (isManager?[{ico:"📤",title:"Выдача и приём товаров",sub:"Вы можете принимать товары от поставщиков и выдавать их сотрудникам на мероприятия.",cta:"Далее →"}]:[{ico:"👁️",title:"Просмотр остатков",sub:"Вы видите все товары и движения своего филиала. Уведомления о просрочках помогут не терять имущество.",cta:"Далее →"}])),
     {ico:"✅",title:"Всё готово к работе",sub:"Начните с добавления товаров, настройки справочников или оформления первой операции.",cta:"Начать работу"}
   ];
   const s=steps[step];
@@ -232,11 +232,7 @@ function Onboarding({role,onDone}){
       <div style={{height:3,background:"var(--brd)"}}><div style={{height:"100%",width:`${((step+1)/steps.length)*100}%`,background:"var(--ink)",transition:"width .3s ease",borderRadius:999}}/></div>
       <div style={{padding:"32px 36px 28px"}}>
         <div style={{display:"flex",gap:6,marginBottom:28}}>{steps.map((_,i)=><div key={i} style={{height:4,flex:1,borderRadius:999,background:i<=step?"var(--ink)":"var(--brd)",transition:"background .3s"}}/>)}</div>
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:12}}>{s.ico}</div>
-          <h2 className="ff" style={{fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:8}}>{s.title}</h2>
-          <p style={{fontSize:14,color:"var(--tx2)",lineHeight:1.65}}>{s.sub}</p>
-        </div>
+        <div style={{marginBottom:24}}><div style={{fontSize:36,marginBottom:12}}>{s.ico}</div><h2 className="ff" style={{fontSize:22,fontWeight:700,color:"var(--tx)",marginBottom:8}}>{s.title}</h2><p style={{fontSize:14,color:"var(--tx2)",lineHeight:1.65}}>{s.sub}</p></div>
       </div>
       <div style={{padding:"0 36px 28px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <button onClick={onDone} style={{fontSize:13,color:"var(--tx3)",cursor:"pointer",background:"none",border:"none"}}>Пропустить</button>
@@ -246,7 +242,7 @@ function Onboarding({role,onDone}){
   </div>
 }
 
-/* ── OP FORM (исправлены ошибки) ──────────────────────────────── */
+/* ── OP FORM ──────────────────────────────────────────────────── */
 function OpForm({type,prefill={},onSave,onCancel,S}){
   const{products,recipients,suppliers,directions,branches,profile,toast}=S;
   const t=type;
@@ -274,8 +270,8 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     const prod=products.find(p=>(p.name||"").toLowerCase().split(" ").some(w=>w.length>3&&low.includes(w)));
     const rec=recipients.find(r=>(r.name||"").toLowerCase().split(" ").some(w=>w.length>2&&low.includes(w)));
     const qm=low.match(/(\d+)/);
-    if(!prod&&low.length>3){toast("Товар не найден. Добавьте его в каталог.","warn");}else if(prod){setForm(f=>({...f,product_id:prod.id}));}
-    if(!rec&&low.length>3){toast("Получатель не найден. Можно ввести вручную.","warn");}else if(rec){setForm(f=>({...f,recipient_id:rec.id}));}
+    if(!prod&&low.length>3){toast("Товар не найден. Добавьте его в каталог.","warn")}else if(prod){setForm(f=>({...f,product_id:prod.id}));}
+    if(!rec&&low.length>3){toast("Получатель не найден. Можно ввести вручную.","warn")}else if(rec){setForm(f=>({...f,recipient_id:rec.id}));}
     if(qm)setForm(f=>({...f,qty:parseInt(qm[0])}));
     setDirty(true);
   },[products,recipients]);
@@ -285,15 +281,13 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     const{data,error}=await sb.from("recipients").insert({name:newRecipient.name,branch_id:Number(newRecipient.branch_id)||null,sz_id:newRecipient.sz_id||null}).select().single();
     if(error){toast("Ошибка: "+error.message,"error");return}
     setForm(f=>({...f,recipient_id:data.id,branch_id:data.branch_id||f.branch_id}));
-    setShowNewRecipient(false);
-    setNewRecipient({name:"",branch_id:"",sz_id:""});
-    toast("Получатель создан");
+    setShowNewRecipient(false);setNewRecipient({name:"",branch_id:"",sz_id:""});toast("Получатель создан");
   };
 
   const doSave=async()=>{
     if(!form.product_id){toast("Выберите товар","error");return}
     setL(true);
-    const payload={
+    const{error}=await sb.from("movements").insert({
       type:t,product_id:Number(form.product_id),qty:Number(form.qty),
       location_id:selProd?.location_id||null,issuer_id:profile.id,
       recipient_id:Number(form.recipient_id)||null,
@@ -305,8 +299,7 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
       direction_id:form.direction_id?Number(form.direction_id):null,
       condition:t==="return"?form.condition:null,
       notes:form.notes||null
-    };
-    const{error}=await sb.from("movements").insert(payload);
+    });
     setL(false);
     if(error){toast("Ошибка: "+error.message,"error");return}
     onSave();
@@ -317,7 +310,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
     else if(t==="writeoff"||(t==="return"&&step===totalSteps))setConfirm(true);
     else doSave();
   };
-
   const ico={in:"📥",out:"📤",return:"🔄",writeoff:"🗑️"};
   return<div>
     {confirm&&<Confirm title={`Подтвердить ${TL[t]}?`} message={`${TL[t]} ${form.qty} шт. "${selProd?.name||"—"}"${selRec?` от ${selRec.name}`:""}`} onOk={()=>{setConfirm(false);doSave()}} onCancel={()=>setConfirm(false)}/>}
@@ -330,7 +322,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
       </div>
       <VoiceBtn onResult={handleVoice} context={t}/>
     </div>
-
     {step===1&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
       <Fld label="Товар"><Sel value={form.product_id} onChange={e=>upd("product_id",e.target.value)}>
         <option value="">— выбрать товар —</option>
@@ -349,7 +340,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
         <Btn onClick={handleNext} style={{flex:1}} disabled={!form.product_id}>Далее →</Btn>
       </div>
     </div>}
-
     {step===2&&(t==="out"||t==="return")&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
       <Fld label={t==="out"?"Получатель":"Возврат от"}>
         <div style={{display:"flex",gap:8}}>
@@ -364,10 +354,7 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
         <Fld label="Имя"><Inp value={newRecipient.name} onChange={e=>setNewRecipient({...newRecipient,name:e.target.value})} placeholder="Полное имя"/></Fld>
         <Fld label="Филиал"><Sel value={newRecipient.branch_id} onChange={e=>setNewRecipient({...newRecipient,branch_id:e.target.value})}><option value="">—</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel></Fld>
         <Fld label="Служебная записка # (опционально)"><Inp value={newRecipient.sz_id} onChange={e=>setNewRecipient({...newRecipient,sz_id:e.target.value})}/></Fld>
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <Btn onClick={createRecipient} size="sm">Сохранить</Btn>
-          <Btn v="secondary" size="sm" onClick={()=>setShowNewRecipient(false)}>Отмена</Btn>
-        </div>
+        <div style={{display:"flex",gap:8,marginTop:8}}><Btn onClick={createRecipient} size="sm">Сохранить</Btn><Btn v="secondary" size="sm" onClick={()=>setShowNewRecipient(false)}>Отмена</Btn></div>
       </div>}
       <Fld label="Укажите филиал"><Sel value={form.branch_id} onChange={e=>upd("branch_id",e.target.value)}>
         <option value="">— выбрать —</option>
@@ -381,7 +368,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
         <Btn onClick={handleNext} style={{flex:1}}>Далее →</Btn>
       </div>
     </div>}
-
     {step===2&&t==="in"&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
       {directions.length>0&&<Fld label="Направление"><Sel value={form.direction_id} onChange={e=>upd("direction_id",e.target.value)}>
         <option value="">— не указано —</option>
@@ -393,7 +379,6 @@ function OpForm({type,prefill={},onSave,onCancel,S}){
         <Btn onClick={doSave} loading={loading} style={{flex:1}}>Сохранить приход</Btn>
       </div>
     </div>}
-
     {step===3&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
       {t==="out"&&<>
         <Fld label="Цель / мероприятие"><Inp value={form.purpose} onChange={e=>upd("purpose",e.target.value)} placeholder="Конференция, выставка..."/></Fld>
@@ -442,15 +427,49 @@ function ItemCard({p,stock,categories,checkouts,onClick}){
   </div>
 }
 
-/* ── ITEMS VIEW ───────────────────────────────────────────────── */
+/* ── ITEMS VIEW (добавлен ввод фото) ──────────────────────────── */
 function ItemsView({S,stock,checkouts}){
   const{products,categories,suppliers,directions,locations,productTypes,can,toast,isRestricted,userBranchId}=S;
   const[search,setSrch]=useState("");const[catF,setCatF]=useState("all");const[mode,setMode]=useState("grid");
   const[showAdd,setAdd]=useState(false);const[sel,setSel]=useState(null);const[loading,setL]=useState(false);
   const visible=products.filter(p=>!p.archived&&(!isRestricted||locations.find(l=>l.id===p.location_id)?.branch_id===userBranchId));
   const filtered=visible.filter(p=>(catF==="all"||p.category_id===catF||p.category_id===catF)&&(!search||p.name?.toLowerCase().includes(search.toLowerCase())||(p.sku||"").toLowerCase().includes(search.toLowerCase())));
-  const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:"",image_url:""});
-  const save=async()=>{if(!form.name.trim()){toast("Укажите название","error");return}setL(true);const{error}=await sb.from("products").insert({name:form.name,sku:form.sku||null,category_id:form.category_id||null,price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,supplier_id:form.supplier_id?Number(form.supplier_id):null,product_type_id:form.product_type_id||null,direction_id:form.direction_id?Number(form.direction_id):null,image_url:form.image_url||null,archived:false});if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}setL(false)};
+  const[form,setForm]=useState({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:"",image_url:"",image_file:null,preview_url:""});
+  const fileRef=useRef(null);
+
+  const handleFileChange=(e)=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>setForm(f=>({...f,preview_url:reader.result,image_url:"",image_file:file}));
+    reader.readAsDataURL(file);
+  };
+
+  const save=async()=>{
+    if(!form.name.trim()){toast("Укажите название","error");return}
+    setL(true);
+    let imageUrl=form.image_url||"";
+    if(form.image_file){
+      // временно используем base64 превью как URL, пока нет Supabase Storage
+      imageUrl=form.preview_url||"";
+      toast("Загрузка файлов пока не подключена, сохранено как base64 (ограниченный размер)","warn");
+    }
+    const{error}=await sb.from("products").insert({
+      name:form.name,sku:form.sku||null,category_id:form.category_id||null,
+      price:Number(form.price)||0,location_id:form.location_id?Number(form.location_id):null,
+      supplier_id:form.supplier_id?Number(form.supplier_id):null,
+      product_type_id:form.product_type_id||null,
+      direction_id:form.direction_id?Number(form.direction_id):null,
+      image_url:imageUrl,archived:false
+    });
+    if(error){toast("Ошибка: "+error.message,"error")}else{setAdd(false);toast("Товар добавлен")}
+    setL(false);
+  };
+
+  const clearForm=()=>{
+    setForm({name:"",sku:"",category_id:"",price:"",location_id:locations[0]?.id||"",supplier_id:suppliers[0]?.id||"",product_type_id:"",direction_id:"",image_url:"",image_file:null,preview_url:""});
+    setAdd(false);
+  };
 
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
@@ -483,9 +502,16 @@ function ItemsView({S,stock,checkouts}){
             <Fld label="Место"><Sel value={form.location_id} onChange={e=>setForm({...form,location_id:e.target.value})}><option value="">—</option>{locations.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</Sel></Fld>
             <Fld label="Поставщик"><Sel value={form.supplier_id} onChange={e=>setForm({...form,supplier_id:e.target.value})}><option value="">—</option>{suppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</Sel></Fld>
             <Fld label="Направление"><Sel value={form.direction_id} onChange={e=>setForm({...form,direction_id:e.target.value})}><option value="">—</option>{directions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</Sel></Fld>
-            <Fld label="Ссылка на фото"><Inp value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})} placeholder="https://..."/></Fld>
+            <Fld label="Фото (URL или файл)">
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <Inp value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})} placeholder="https://..." disabled={!!form.preview_url}/>
+                <input type="file" accept="image/*" ref={fileRef} onChange={handleFileChange} style={{display:"none"}}/>
+                <Btn size="sm" v="secondary" onClick={()=>fileRef.current?.click()}>📷</Btn>
+              </div>
+              {form.preview_url&&<img src={form.preview_url} style={{width:80,height:80,objectFit:"cover",borderRadius:8,marginTop:8,border:"1px solid var(--brd)"}}/>}
+            </Fld>
           </div>
-          <div style={{display:"flex",gap:8}}><Btn onClick={save} loading={loading}>Сохранить</Btn><Btn v="secondary" onClick={()=>setAdd(false)}>Отмена</Btn></div>
+          <div style={{display:"flex",gap:8}}><Btn onClick={save} loading={loading}>Сохранить</Btn><Btn v="secondary" onClick={clearForm}>Отмена</Btn></div>
         </div>
       </div>}
 
@@ -521,7 +547,7 @@ function ItemsView({S,stock,checkouts}){
 }
 
 function ItemModal({p,stock,S,checkouts,onClose}){
-  const qty=stock[p.id]||0; const onH=checkouts.filter(c=>c.product_id===p.id); const hist=S.movements.filter(m=>m.product_id===p.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
+  const qty=stock[p.id]||0;const onH=checkouts.filter(c=>c.product_id===p.id);const hist=S.movements.filter(m=>m.product_id===p.id).sort((a,b)=>(b.created_at||"").localeCompare(a.created_at||""));
   const[rqty,setRqty]=useState(1);const[tab,setTab]=useState("info");
   const cat=S.categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{icon:"📦",color:"#6366F1"};
   const[confirm,setConfirm]=useState(null);
@@ -589,7 +615,7 @@ function ItemModal({p,stock,S,checkouts,onClose}){
   </div>
 }
 
-/* ── ACTIVITY VIEW (исправлен фильтр по филиалу) ──────────────── */
+/* ── ACTIVITY VIEW (убрали селектор филиалов для restricted) ── */
 function ActivityView({S,checkouts,overdue}){
   const{movements,products,recipients,suppliers,branches,can,toast,profile,isRestricted,userBranchId}=S;
   const[typeF,setTypeF]=useState("all");const[brF,setBrF]=useState("");const[search,setSrch]=useState("");const[sheet,setSheet]=useState(null);
@@ -599,7 +625,7 @@ function ActivityView({S,checkouts,overdue}){
   const filtered=[...movements].filter(m=>{
     if(typeF!=="all"&&m.type!==typeF)return false;
     if(isRestricted&&m.branch_id!==userBranchId)return false;
-    if(brF&&m.branch_id!=brF)return false;
+    if(!isRestricted&&brF&&m.branch_id!=brF)return false;
     const d=(m.created_at||"").slice(0,10);
     if(df&&d<df)return false;if(d>dt)return false;
     if(search){const str=(pName(m.product_id)+(m.recipient_id?rName(m.recipient_id):"")+(m.purpose||"")+(m.sz||"")).toLowerCase();if(!str.includes(search.toLowerCase()))return false}
@@ -617,9 +643,9 @@ function ActivityView({S,checkouts,overdue}){
       </div>
       <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
         {["all","out","in","return","writeoff"].map(t=><button key={t} onClick={()=>setTypeF(t)} style={{padding:"5px 12px",borderRadius:999,border:`1px solid ${typeF===t?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:typeF===t?600:400,background:typeF===t?"var(--ink-l)":"var(--sur)",color:typeF===t?"var(--ink)":"var(--tx2)",cursor:"pointer",transition:"all .12s"}}>{t==="all"?"Все":TL[t]}</button>)}
-        <Sel value={brF} onChange={e=>setBrF(e.target.value)} style={{width:150,fontSize:12}}>
+        {!isRestricted&&<Sel value={brF} onChange={e=>setBrF(e.target.value)} style={{width:150,fontSize:12}}>
           <option value="">Все филиалы</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}
-        </Sel>
+        </Sel>}
         <div style={{display:"flex",gap:6,marginLeft:"auto",alignItems:"center"}}>
           <Inp type="date" value={df} onChange={e=>setDF(e.target.value)} style={{width:128,fontSize:11}}/><span style={{color:"var(--tx3)"}}>—</span>
           <Inp type="date" value={dt} onChange={e=>setDT(e.target.value)} style={{width:128,fontSize:11}}/>
@@ -655,6 +681,66 @@ function ActivityView({S,checkouts,overdue}){
   </div>
 }
 
+/* ── REPORTS VIEW (исправлен белый экран + locations) ─────────── */
+function ReportsView({S,stock}){
+  const{products,movements,categories,directions,suppliers,branches,locations}=S;
+  const[tab,setTab]=useState("stock");
+  const[selBranch,setSelBranch]=useState("");
+  const byBranchData=useMemo(()=>{
+    const map={};
+    branches.forEach(b=>{map[b.id]={...b,qty:0,val:0}});
+    products.filter(p=>!p.archived).forEach(p=>{
+      const brId=locations?.find(l=>l.id===p.location_id)?.branch_id;
+      if(brId&&map[brId]){map[brId].qty+=stock[p.id]||0;map[brId].val+=(stock[p.id]||0)*p.price}
+    });
+    return Object.values(map);
+  },[products,stock,branches,locations]);
+  const rows=products.filter(p=>!p.archived&&(!selBranch||locations?.find(l=>l.id===p.location_id)?.branch_id==selBranch)).map(p=>{const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),retQ:movements.filter(m=>m.type==="return"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),wrtQ:movements.filter(m=>m.type==="writeoff"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0)}}).sort((a,b)=>b.outQ-a.outQ);
+  const tV=rows.reduce((a,r)=>a+r.val,0);
+  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Возврат,Списано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.retQ},${r.wrtQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
+  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+      <span className="ff" style={{fontSize:17,fontWeight:700}}>Отчёты</span>
+      <div style={{display:"flex",gap:8}}>
+        {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"],["by_branch","По филиалам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
+        {tab==="stock"&&<Sel value={selBranch} onChange={e=>setSelBranch(e.target.value)} style={{width:160}}><option value="">Все филиалы</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel>}
+        <Btn v="success" size="sm" onClick={exportCSV}>↓ CSV</Btn>
+      </div>
+    </div>
+    <div style={{flex:1,overflow:"auto",padding:20}}>
+      <div style={{background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Стоимость остатков</div><div className="ff" style={{fontSize:32,fontWeight:800,color:"white"}}>{som(tV)}</div></div>
+        <div style={{display:"flex",gap:24}}>{[{l:"Позиций",v:rows.length},{l:"В наличии",v:rows.filter(r=>r.qty>0).length},{l:"Нет",v:rows.filter(r=>r.qty<=0).length}].map((k,i)=><div key={i} style={{textAlign:"center"}}><div className="ff" style={{fontSize:24,fontWeight:800,color:"white"}}>{k.v}</div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>{k.l}</div></div>)}</div>
+      </div>
+      {tab==="stock"&&<div className="card" style={{padding:0,overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Возврат","Списано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r,i)=><tr key={r.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
+            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:10,color:"var(--tx3)"}}>{r.sku||"—"}</td><td style={{padding:"10px 14px",fontWeight:600}}>{r.name}</td>
+            <td style={{padding:"10px 14px"}}><span style={{background:(r.cat.color||"#6366F1")+"18",color:r.cat.color||"#6366F1",padding:"2px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>{r.cat.icon} {r.cat.name}</span></td>
+            <td style={{padding:"10px 14px",color:"var(--tx2)"}}>{som(r.price)}</td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--gr)"}}>{r.inQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{r.outQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--pu)"}}>{r.retQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--rd)"}}>{r.wrtQ}</span></td>
+            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:800,fontSize:16,color:r.qty<=0?"var(--rd)":r.qty<5?"var(--am)":"var(--tx)"}}>{r.qty}</span></td>
+            <td style={{padding:"10px 14px",fontWeight:600}}>{som(r.val)}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+      {tab==="by_dir"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+        {directions.map(d=>{const prods=products.filter(p=>p.direction_id===d.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={d.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{d.name}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
+      </div>}
+      {tab==="by_sup"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+        {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);const tIn=movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);return<div key={s.id} className="card" style={{padding:"18px 20px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div><div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>{s.contact}</div><div style={{display:"flex",gap:8,marginBottom:4}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:11,color:"var(--tx3)"}}>{tIn} шт поставлено · {prods.length} позиций</div></div>})}
+      </div>}
+      {tab==="by_branch"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+        {byBranchData.map(b=><div key={b.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{b.name}{b.city?`, ${b.city}`:""}</div><div style={{display:"flex",gap:8}}><Badge color="ink">{b.qty} шт</Badge><Badge color="green">{som(b.val)}</Badge></div></div>)}
+      </div>}
+    </div>
+  </div>
+}
+
 /* ── BRANCHES VIEW ────────────────────────────────────────────── */
 function BranchesView({S,checkouts}){
   const{branches,products,recipients,toast,profile,isRestricted,userBranchId}=S;
@@ -669,7 +755,6 @@ function BranchesView({S,checkouts}){
   const rName=id=>recipients.find(r=>r.id===id)?.name??"—";
   const pName=id=>products.find(p=>p.id===id)?.name??"—";
   const doReturn=async c=>{const{error}=await sb.from("movements").insert({type:"return",product_id:c.product_id,qty:c.remaining,location_id:products.find(p=>p.id===c.product_id)?.location_id,issuer_id:profile.id,recipient_id:c.recipient_id,branch_id:c.branch_id,condition:"хорошее",date:TODAY});if(error)toast("Ошибка","error");else toast("Возврат оформлен");setConfirm(null)};
-
   return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
     {confirm&&<Confirm title="Оформить возврат?" message={`Возврат ${confirm.remaining} шт "${pName(confirm.product_id)}" от ${rName(confirm.recipient_id)}`} onOk={()=>doReturn(confirm)} onCancel={()=>setConfirm(null)}/>}
     <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",flexShrink:0}}>
@@ -711,7 +796,7 @@ function BranchesView({S,checkouts}){
   </div>
 }
 
-/* ── RECIPIENTS VIEW (исправлена ошибка sz_id) ───────────────── */
+/* ── RECIPIENTS VIEW ───────────────────────────────────────────── */
 function RecipientsView({S}){
   const{recipients,branches,can,toast}=S;
   const[form,setForm]=useState({name:"",branch_id:branches[0]?.id||"",sz_id:""});
@@ -739,59 +824,6 @@ function RecipientsView({S}){
         <div style={{flex:1}}><div className="ff" style={{fontWeight:600,fontSize:13}}>{r.name}</div><div style={{fontSize:11,color:"var(--tx3)"}}>{branches.find(b=>b.id===r.branch_id)?.name||"—"}{r.sz_id?` · СЗ: ${r.sz_id}`:""}</div></div>
         {can("edit")&&<Btn v="ghost" size="sm" onClick={()=>remove(r.id)}>Удалить</Btn>}
       </div>)}
-    </div>
-  </div>
-}
-
-/* ── REPORTS VIEW ─────────────────────────────────────────────── */
-function ReportsView({S,stock}){
-  const{products,movements,categories,directions,suppliers,branches}=S;
-  const[tab,setTab]=useState("stock");
-  const[selBranch,setSelBranch]=useState("");
-  const byBranchData=useMemo(()=>{const map={};branches.forEach(b=>{map[b.id]={...b,qty:0,val:0}});products.filter(p=>!p.archived).forEach(p=>{const brId=locations?.find(l=>l.id===p.location_id)?.branch_id;if(brId&&map[brId]){map[brId].qty+=stock[p.id]||0;map[brId].val+=(stock[p.id]||0)*p.price}});return Object.values(map)},[products,stock,branches,locations]);
-  const rows=products.filter(p=>!p.archived&&(!selBranch||locations?.find(l=>l.id===p.location_id)?.branch_id==selBranch)).map(p=>{const cat=categories.find(c=>c.id===p.category_id||c.name===p.category_id)||{name:"—",icon:"📦",color:"#6366F1"};return{...p,cat,qty:stock[p.id]||0,val:(stock[p.id]||0)*p.price,inQ:movements.filter(m=>m.type==="in"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),outQ:movements.filter(m=>m.type==="out"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),retQ:movements.filter(m=>m.type==="return"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0),wrtQ:movements.filter(m=>m.type==="writeoff"&&m.product_id===p.id).reduce((a,m)=>a+m.qty,0)}}).sort((a,b)=>b.outQ-a.outQ);
-  const tV=rows.reduce((a,r)=>a+r.val,0);
-  const exportCSV=()=>{const csv=["Артикул,Название,Категория,Цена,Приход,Выдано,Возврат,Списано,Остаток,Стоимость",...rows.map(r=>`${r.sku||""},"${r.name}",${r.cat.name},${r.price},${r.inQ},${r.outQ},${r.retQ},${r.wrtQ},${r.qty},${r.val}`)].join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`sklad_${TODAY}.csv`;a.click()};
-  return<div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-    <div style={{background:"var(--sur)",borderBottom:"1px solid var(--brd)",padding:"14px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-      <span className="ff" style={{fontSize:17,fontWeight:700}}>Отчёты</span>
-      <div style={{display:"flex",gap:8}}>
-        {[["stock","По остаткам"],["by_dir","По направлениям"],["by_sup","По поставщикам"],["by_branch","По филиалам"]].map(([v,l])=><button key={v} onClick={()=>setTab(v)} style={{padding:"6px 14px",borderRadius:9,border:`1px solid ${tab===v?"var(--ink)":"var(--brd)"}`,fontSize:12,fontWeight:tab===v?600:400,cursor:"pointer",background:tab===v?"var(--ink-l)":"var(--sur)",color:tab===v?"var(--ink)":"var(--tx2)",transition:"all .12s"}}>{l}</button>)}
-        {tab==="stock"&&<Sel value={selBranch} onChange={e=>setSelBranch(e.target.value)} style={{width:160}}><option value="">Все филиалы</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</Sel>}
-        <Btn v="success" size="sm" onClick={exportCSV}>↓ CSV</Btn>
-      </div>
-    </div>
-    <div style={{flex:1,overflow:"auto",padding:20}}>
-      <div style={{background:"linear-gradient(135deg,var(--ink),var(--pu))",borderRadius:16,padding:"20px 24px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{fontSize:11,color:"rgba(255,255,255,.65)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Стоимость остатков</div><div className="ff" style={{fontSize:32,fontWeight:800,color:"white"}}>{som(tV)}</div></div>
-        <div style={{display:"flex",gap:24}}>{[{l:"Позиций",v:rows.length},{l:"В наличии",v:rows.filter(r=>r.qty>0).length},{l:"Нет",v:rows.filter(r=>r.qty<=0).length}].map((k,i)=><div key={i} style={{textAlign:"center"}}><div className="ff" style={{fontSize:24,fontWeight:800,color:"white"}}>{k.v}</div><div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>{k.l}</div></div>)}</div>
-      </div>
-      {tab==="stock"&&<div className="card" style={{padding:0,overflow:"hidden"}}>
-        <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr style={{background:"var(--bg)"}}>{["Артикул","Название","Категория","Цена","Приход","Выдано","Возврат","Списано","Остаток","Стоимость"].map(h=><th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--tx3)",letterSpacing:".06em",textTransform:"uppercase",borderBottom:"1px solid var(--brd)",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
-          <tbody>{rows.map((r,i)=><tr key={r.id} style={{background:i%2?"var(--bg)":"var(--sur)",borderBottom:"1px solid var(--brd)"}}>
-            <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:10,color:"var(--tx3)"}}>{r.sku||"—"}</td>
-            <td style={{padding:"10px 14px",fontWeight:600}}>{r.name}</td>
-            <td style={{padding:"10px 14px"}}><span style={{background:(r.cat.color||"#6366F1")+"18",color:r.cat.color||"#6366F1",padding:"2px 8px",borderRadius:999,fontSize:11,fontWeight:600}}>{r.cat.icon} {r.cat.name}</span></td>
-            <td style={{padding:"10px 14px",color:"var(--tx2)"}}>{som(r.price)}</td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--gr)"}}>{r.inQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--ink)"}}>{r.outQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--pu)"}}>{r.retQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:700,color:"var(--rd)"}}>{r.wrtQ}</span></td>
-            <td style={{padding:"10px 14px"}}><span className="ff" style={{fontWeight:800,fontSize:16,color:r.qty<=0?"var(--rd)":r.qty<5?"var(--am)":"var(--tx)"}}>{r.qty}</span></td>
-            <td style={{padding:"10px 14px",fontWeight:600}}>{som(r.val)}</td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
-      {tab==="by_dir"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
-        {directions.map(d=>{const prods=products.filter(p=>p.direction_id===d.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);return<div key={d.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:8}}>{d.name}</div><div style={{display:"flex",gap:8,marginBottom:8}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:12,color:"var(--tx3)"}}>{prods.length} позиций</div></div>})}
-      </div>}
-      {tab==="by_sup"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-        {suppliers.map(s=>{const prods=products.filter(p=>p.supplier_id===s.id&&!p.archived);const qty=prods.reduce((a,p)=>a+(stock[p.id]||0),0);const val=prods.reduce((a,p)=>a+(stock[p.id]||0)*p.price,0);const tIn=movements.filter(m=>m.type==="in"&&m.supplier_id===s.id).reduce((a,m)=>a+m.qty,0);return<div key={s.id} className="card" style={{padding:"18px 20px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{s.name}</div><div style={{fontSize:12,color:"var(--tx2)",marginBottom:8}}>{s.contact}</div><div style={{display:"flex",gap:8,marginBottom:4}}><Badge color="ink">{qty} шт</Badge><Badge color="green">{som(val)}</Badge></div><div style={{fontSize:11,color:"var(--tx3)"}}>{tIn} шт поставлено · {prods.length} позиций</div></div>})}
-      </div>}
-      {tab==="by_branch"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
-        {byBranchData.map(b=><div key={b.id} className="card" style={{padding:"16px 18px"}}><div className="ff" style={{fontWeight:700,fontSize:17,marginBottom:4}}>{b.name}{b.city?`, ${b.city}`:""}</div><div style={{display:"flex",gap:8}}><Badge color="ink">{b.qty} шт</Badge><Badge color="green">{som(b.val)}</Badge></div></div>)}
-      </div>}
     </div>
   </div>
 }
@@ -836,7 +868,7 @@ function UsersView({S}){
   </div>
 }
 
-/* ── SETTINGS VIEW (исправлены id для categories и types) ────── */
+/* ── SETTINGS VIEW ────────────────────────────────────────────── */
 function SettingsView({S,refreshData}){
   const[tab,setTab]=useState("categories");const{toast,can,branches,categories,productTypes:PT,locations,suppliers,directions}=S;
   const[n,setN]=useState({cat:{name:"",color:"#4F4CEC",icon:"📦"},type:{name:""},loc:{name:"",branch_id:branches[0]?.id||""},sup:{name:"",contact:"",inn:""},dir:{name:""},br:{name:"",city:"",head:""}});
@@ -844,7 +876,7 @@ function SettingsView({S,refreshData}){
   const add=async(table,data,key)=>{
     if(!data.name?.trim())return;
     const payload={...data};
-    if(table==="categories"||table==="product_types") payload.id=data.name.toLowerCase().replace(/\s+/g,"_");
+    if(table==="categories"||table==="product_types")payload.id=data.name.toLowerCase().replace(/\s+/g,"_");
     const{error}=await sb.from(table).insert(payload);
     if(error)toast("Ошибка: "+error.message,"error");
     else{toast("Добавлено");await refreshData();setN(p=>({...p,[key]:{name:"",color:"#4F4CEC",icon:"📦",branch_id:branches[0]?.id||"",contact:"",inn:"",city:"",head:""}}))}
